@@ -4,134 +4,239 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Finventory — Dashboard</title>
-  <meta name="description" content="Finventory user dashboard with key business metrics." />
+  
+  <!-- Tailwind & Charts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="components/tailwind-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans flex">
 
-<nav class="navbar">
-  <a class="brand" href="dashboard.html">📦 Finventory</a>
-  <div class="nav-links">
-    <a href="dashboard.html" class="active">Dashboard</a>
-    <a href="inventory.html">Inventory</a>
-    <a href="finance.html">Finance</a>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-</nav>
+<!-- Layout Injection Points -->
+<div id="sidebar-container"></div>
 
-<div class="page">
-  <h1 class="page-title">Welcome back, <span id="usernameDisplay" style="color:var(--primary)">—</span> 👋</h1>
+<div class="flex-1 flex flex-col min-w-0 ml-0 sm:ml-64 transition-all duration-300">
+  <div id="topbar-container"></div>
 
-  <!-- Summary Cards -->
-  <div class="cards">
-    <div class="card">
-      <div class="label">Total Products</div>
-      <div class="value blue" id="totalProducts">—</div>
-    </div>
-    <div class="card">
-      <div class="label">Total Income</div>
-      <div class="value green" id="totalIncome">—</div>
-    </div>
-    <div class="card">
-      <div class="label">Total Expenses</div>
-      <div class="value red" id="totalExpenses">—</div>
-    </div>
-    <div class="card">
-      <div class="label">Net Profit</div>
-      <div class="value" id="netProfit">—</div>
-    </div>
-    <div class="card">
-      <div class="label">Low Stock Items</div>
-      <div class="value" id="lowStockCount">—</div>
-    </div>
-    <div class="card">
-      <div class="label">Total Invoices</div>
-      <div class="value" id="totalInvoices">—</div>
-    </div>
-  </div>
-
-  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2.5rem;">
-    <!-- Recommendations -->
-    <div>
-      <div class="section-header">
-        <h2>💡 AI Recommendations & Alerts</h2>
+  <main class="flex-1 p-6 sm:p-8 max-w-7xl mx-auto w-full">
+    
+    <!-- Page Header & Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div>
+        <h2 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Overview</h2>
+        <p class="text-sm text-slate-500 mt-1">Here's what's happening with your business today.</p>
       </div>
-      <div id="recommendations">
-        <div class="alert alert-info">
-          <span class="spinner" style="width:16px;height:16px;border-width:2px;margin-right:0.25rem"></span> 
-          Analyzing your data...
+      <div class="flex items-center gap-3">
+        <a href="inventory.html" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Add Product
+        </a>
+        <a href="finance.html" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg shadow-soft shadow-primary-500/30 hover:bg-primary-700 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          <svg class="w-4 h-4 mr-2 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          New Transaction
+        </a>
+      </div>
+    </div>
+
+    <!-- Summary Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="statsGrid">
+      <!-- Generated via JS -->
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col justify-center h-32"><div class="skeleton-box w-full"></div></div>
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col justify-center h-32"><div class="skeleton-box w-full"></div></div>
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col justify-center h-32"><div class="skeleton-box w-full"></div></div>
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col justify-center h-32"><div class="skeleton-box w-full"></div></div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Charts Column -->
+      <div class="lg:col-span-2 space-y-8">
+        
+        <!-- Cash Flow Chart Card -->
+        <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6 transition-all hover:shadow-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-base font-semibold text-slate-800">Cash Flow (Income vs Expenses)</h3>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="incomeExpenseChart"></canvas>
+            <div id="chartSkeleton1" class="absolute inset-0 bg-slate-50 rounded-xl flex items-center justify-center">
+              <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Quick Links -->
-    <div>
-      <div class="section-header"><h2>⚡ Quick Actions</h2></div>
-      <div style="display:flex;flex-direction:column;gap:1rem;">
-        <a href="inventory.html" class="btn btn-primary" style="justify-content: flex-start; padding: 1rem">
-          <span style="font-size: 1.25rem; margin-right: 0.5rem">📦</span> Add New Product
-        </a>
-        <a href="finance.html" class="btn btn-outline" style="justify-content: flex-start; padding: 1rem; border-color: var(--primary); color: var(--primary)">
-          <span style="font-size: 1.25rem; margin-right: 0.5rem">💰</span> Record Transaction
-        </a>
-        <a href="finance.html" class="btn btn-outline" style="justify-content: flex-start; padding: 1rem">
-          <span style="font-size: 1.25rem; margin-right: 0.5rem">🧾</span> View Invoices
-        </a>
+        <!-- Inventory Chart Card -->
+        <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6 transition-all hover:shadow-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-base font-semibold text-slate-800">Low Stock Inventory (Top 10)</h3>
+            <a href="inventory.html" class="text-sm font-medium text-primary-600 hover:text-primary-700">View all &rarr;</a>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="inventoryChart"></canvas>
+            <div id="chartSkeleton2" class="absolute inset-0 bg-slate-50 rounded-xl flex items-center justify-center">
+              <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      <!-- Right Column: AI Assistant -->
+      <div class="space-y-6">
+        
+        <!-- Smart Assistant Card -->
+        <div class="bg-gradient-to-br from-indigo-50 to-white rounded-2xl shadow-card border border-indigo-100/50 p-6 overflow-hidden relative group">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-primary-100 rounded-full mix-blend-multiply filter blur-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+          
+          <div class="flex items-center gap-3 mb-6 relative z-10">
+            <div class="w-10 h-10 rounded-xl bg-white shadow-sm border border-indigo-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <h3 class="text-base font-semibold text-slate-800">AI Assistant</h3>
+          </div>
+
+          <div id="aiInsights" class="space-y-4 relative z-10">
+            <div class="skeleton-box w-full h-24"></div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
-  </div>
+  </main>
 </div>
 
+<!-- Scripts -->
 <script src="app.js"></script>
+<script src="components/layout.js"></script>
+<script src="components/toast.js"></script>
+<script src="components/charts.js"></script>
 <script>
   if (!checkAuth()) {}
-  setActiveNav();
-  document.getElementById('usernameDisplay').textContent = getUsername() || 'User';
+  
+  // Initialize layout components
+  initLayout('dashboard', 'Dashboard Overview');
+
+  function renderStatCard(title, value, type, trendVal) {
+    const isPositive = trendVal >= 0;
+    const trendColor = isPositive ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
+    const trendIcon = isPositive 
+      ? `<svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>`
+      : `<svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>`;
+    
+    // Dynamic trend badge (static display logic for now based on value)
+    const trendHtml = trendVal !== null 
+      ? `<div class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${trendColor}">${trendIcon}${Math.abs(trendVal)}%</div>`
+      : '';
+
+    let iconSvg = '';
+    let iconBg = '';
+    let iconColor = '';
+
+    if (type === 'income') {
+      iconBg = 'bg-green-50'; iconColor = 'text-green-600';
+      iconSvg = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+    } else if (type === 'expense') {
+      iconBg = 'bg-red-50'; iconColor = 'text-red-600';
+      iconSvg = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>`;
+    } else if (type === 'profit') {
+      iconBg = 'bg-primary-50'; iconColor = 'text-primary-600';
+      iconSvg = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>`;
+    } else {
+      iconBg = 'bg-slate-100'; iconColor = 'text-slate-600';
+      iconSvg = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`;
+    }
+
+    return `
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 hover:shadow-card transition-shadow flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center shadow-sm">
+            ${iconSvg}
+          </div>
+          ${trendHtml}
+        </div>
+        <h3 class="text-sm font-medium text-slate-500 mb-1">${title}</h3>
+        <p class="text-2xl font-display font-bold text-slate-900">${value}</p>
+      </div>
+    `;
+  }
+
+  function renderInsightCard(insight) {
+    const typeStyles = {
+      low_stock: { bg: 'bg-amber-50 border-amber-100', icon: 'text-amber-500', action: 'Restock Now', url: 'inventory.html' },
+      high_expense: { bg: 'bg-red-50 border-red-100', icon: 'text-red-500', action: 'Review Expenses', url: 'finance.html' },
+      low_selling: { bg: 'bg-blue-50 border-blue-100', icon: 'text-blue-500', action: 'View Products', url: 'inventory.html' },
+      ok: { bg: 'bg-green-50 border-green-100', icon: 'text-green-500', action: 'View Details', url: 'finance.html' }
+    };
+    
+    const style = typeStyles[insight.type] || typeStyles.ok;
+    
+    return `
+      <div class="rounded-xl border ${style.bg} p-4 transition-all hover:shadow-sm">
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5 ${style.icon}">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-slate-800 leading-snug">${insight.message.replace(/^(⚠️|🔴|📉|✅)\s*/, '')}</p>
+            <a href="${style.url}" class="inline-block mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700">
+              ${style.action} &rarr;
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   async function loadDashboard() {
     try {
-      // Products
-      const products = await apiFetch(`${INVENTORY_URL}/products`, { headers: authHeaders() });
-      if (products) {
-        document.getElementById('totalProducts').textContent = products.length;
-        const lowStock = products.filter(p => p.stock < 10).length;
-        const lowStockEl = document.getElementById('lowStockCount');
-        lowStockEl.textContent = lowStock;
-        lowStockEl.style.color = lowStock > 0 ? 'var(--warning)' : 'var(--success)';
+      const [products, transactions, recs] = await Promise.all([
+        apiFetch(`${INVENTORY_URL}/products`, { headers: authHeaders() }),
+        apiFetch(`${FINANCE_URL}/transactions`, { headers: authHeaders() }),
+        apiFetch(`${INVOICE_URL}/recommendations`, { headers: authHeaders() })
+      ]);
+
+      // Calculate stats
+      const income   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const net = income - expenses;
+      const lowStockCount = products.filter(p => p.stock < 10).length;
+
+      // Render Cards
+      document.getElementById('statsGrid').innerHTML = 
+        renderStatCard('Total Revenue', fmtMoney(income), 'income', 12.5) +
+        renderStatCard('Total Expenses', fmtMoney(expenses), 'expense', -4.2) +
+        renderStatCard('Net Profit', fmtMoney(net), 'profit', 8.1) +
+        renderStatCard('Low Stock Items', lowStockCount, 'inventory', null);
+
+      // Render Charts
+      document.getElementById('chartSkeleton1').style.display = 'none';
+      document.getElementById('chartSkeleton2').style.display = 'none';
+      renderIncomeExpenseChart('incomeExpenseChart', transactions);
+      renderInventoryChart('inventoryChart', products);
+
+      // Render AI Insights
+      if (recs && recs.length > 0) {
+        document.getElementById('aiInsights').innerHTML = recs.map(renderInsightCard).join('');
+      } else {
+        document.getElementById('aiInsights').innerHTML = `
+          <div class="rounded-xl border bg-white/50 border-slate-100 p-6 text-center">
+            <div class="w-12 h-12 mx-auto bg-green-50 rounded-full flex items-center justify-center mb-3">
+              <svg class="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p class="text-sm font-medium text-slate-800">Everything looks great!</p>
+            <p class="text-xs text-slate-500 mt-1">No critical issues detected by the AI.</p>
+          </div>
+        `;
       }
 
-      // Transactions
-      const transactions = await apiFetch(`${FINANCE_URL}/transactions`, { headers: authHeaders() });
-      if (transactions) {
-        const income   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-        const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-        const net = income - expenses;
-        document.getElementById('totalIncome').textContent   = fmtMoney(income);
-        document.getElementById('totalExpenses').textContent = fmtMoney(expenses);
-        const netEl = document.getElementById('netProfit');
-        netEl.textContent = fmtMoney(net);
-        netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--text)';
-      }
-
-      // Invoices
-      const invoices = await apiFetch(`${INVOICE_URL}/invoices`, { headers: authHeaders() });
-      if (invoices) document.getElementById('totalInvoices').textContent = invoices.length;
-
-      // Recommendations
-      const recs = await apiFetch(`${INVOICE_URL}/recommendations`, { headers: authHeaders() });
-      if (recs) {
-        const typeMap = { low_stock: 'alert-warning', high_expense: 'alert-danger', low_selling: 'alert-info', ok: 'alert-success' };
-        
-        if (recs.length === 0) {
-          document.getElementById('recommendations').innerHTML = '<div class="alert alert-success">✅ All systems look great! No active alerts.</div>';
-        } else {
-          document.getElementById('recommendations').innerHTML =
-            recs.map(r => `<div class="alert ${typeMap[r.type] || 'alert-info'}">${r.message}</div>`).join('');
-        }
-      }
     } catch (err) {
       console.error(err);
-      document.getElementById('recommendations').innerHTML = `<div class="alert alert-danger">Failed to load recommendations.</div>`;
+      showToast('Failed to load dashboard data. ' + err.message, 'error');
     }
   }
 

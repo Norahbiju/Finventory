@@ -4,145 +4,208 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Finventory — Finance</title>
-  <meta name="description" content="Track income, expenses, generate invoices, and view recommendations." />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="components/tailwind-config.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans flex">
 
-<nav class="navbar">
-  <a class="brand" href="dashboard.html">📦 Finventory</a>
-  <div class="nav-links">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="inventory.html">Inventory</a>
-    <a href="finance.html" class="active">Finance</a>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-</nav>
+<!-- Layout Injection Points -->
+<div id="sidebar-container"></div>
 
-<div class="page">
-  <div class="section-header">
-    <h1 class="page-title" style="margin-bottom:0">💰 Finance</h1>
-    <button class="btn btn-primary" onclick="openModal('txModal')">+ Record Transaction</button>
-  </div>
+<div class="flex-1 flex flex-col min-w-0 ml-0 sm:ml-64 transition-all duration-300">
+  <div id="topbar-container"></div>
 
-  <!-- Summary Cards -->
-  <div class="cards" style="margin-bottom: 2rem;">
-    <div class="card"><div class="label">Total Income</div><div class="value green" id="cardIncome">—</div></div>
-    <div class="card"><div class="label">Total Expenses</div><div class="value red" id="cardExpense">—</div></div>
-    <div class="card"><div class="label">Net Profit</div><div class="value" id="cardNet">—</div></div>
-    <div class="card"><div class="label">Transactions</div><div class="value blue" id="cardCount">—</div></div>
-  </div>
-
-  <!-- Tabs -->
-  <div style="display:flex;gap:0.75rem;margin-bottom:1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
-    <button class="btn btn-primary" id="tabTx" onclick="showTab('tx')">Transactions</button>
-    <button class="btn btn-outline" id="tabInv" onclick="showTab('inv')">Invoices</button>
-  </div>
-
-  <!-- Transactions Tab -->
-  <div id="tab-tx">
-    <div class="section-header">
-      <h2>Transaction History</h2>
-      <span id="txCount" style="font-size:0.85rem;color:var(--muted)"></span>
+  <main class="flex-1 p-6 sm:p-8 max-w-7xl mx-auto w-full">
+    
+    <!-- Page Header & Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div>
+        <h2 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Finance</h2>
+        <p class="text-sm text-slate-500 mt-1">Track transactions and generate invoices.</p>
+      </div>
+      <div>
+        <button onclick="openModal('txModal')" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg shadow-soft shadow-primary-500/30 hover:bg-primary-700 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 active:scale-[0.98]">
+          <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Record Transaction
+        </button>
+      </div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Type</th><th>Category</th><th>Amount</th><th>Description</th><th>Product</th><th>Qty</th><th>Date</th><th>Action</th></tr>
-        </thead>
-        <tbody id="txTableBody"><tr><td colspan="9" class="empty"><span class="spinner"></span></td></tr></tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- Invoices Tab -->
-  <div id="tab-inv" style="display:none">
-    <div class="section-header">
-      <h2>Generated Invoices</h2>
-      <span id="invCount" style="font-size:0.85rem;color:var(--muted)"></span>
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col">
+        <h3 class="text-sm font-medium text-slate-500 mb-1">Total Income</h3>
+        <p class="text-2xl font-display font-bold text-green-600" id="cardIncome">...</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col">
+        <h3 class="text-sm font-medium text-slate-500 mb-1">Total Expenses</h3>
+        <p class="text-2xl font-display font-bold text-red-600" id="cardExpense">...</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col">
+        <h3 class="text-sm font-medium text-slate-500 mb-1">Net Profit</h3>
+        <p class="text-2xl font-display font-bold text-slate-900" id="cardNet">...</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-soft border border-slate-100 flex flex-col">
+        <h3 class="text-sm font-medium text-slate-500 mb-1">Total Transactions</h3>
+        <p class="text-2xl font-display font-bold text-primary-600" id="cardCount">...</p>
+      </div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Ref TX</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Date</th></tr>
-        </thead>
-        <tbody id="invTableBody"><tr><td colspan="7" class="empty"><span class="spinner"></span></td></tr></tbody>
-      </table>
+
+    <!-- Tabs -->
+    <div class="mb-6 border-b border-slate-200">
+      <nav class="-mb-px flex space-x-8">
+        <button id="tabTx" onclick="showTab('tx')" class="border-primary-500 text-primary-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+          Transactions
+        </button>
+        <button id="tabInv" onclick="showTab('inv')" class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+          Invoices
+        </button>
+      </nav>
     </div>
-  </div>
+
+    <!-- Transactions Tab -->
+    <div id="tab-tx" class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+        <h3 class="text-sm font-semibold text-slate-800 uppercase tracking-wider">Transaction History</h3>
+        <span id="txCount" class="text-xs font-medium text-slate-500">Loading...</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-white">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Type & Cat</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+              <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="txTableBody" class="bg-white divide-y divide-slate-100">
+            <tr class="skeleton-row">
+              <td><div class="skeleton-box w-20 rounded-full h-6"></div></td>
+              <td><div class="skeleton-box w-1/2 h-4"></div></td>
+              <td><div class="skeleton-box w-16 h-5"></div></td>
+              <td><div class="skeleton-box w-24 h-4"></div></td>
+              <td><div class="skeleton-box w-16 h-8 rounded-lg float-right"></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Invoices Tab -->
+    <div id="tab-inv" class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden hidden">
+      <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+        <h3 class="text-sm font-semibold text-slate-800 uppercase tracking-wider">Generated Invoices</h3>
+        <span id="invCount" class="text-xs font-medium text-slate-500">Loading...</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-white">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice ID</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Product</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Qty / Price</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+            </tr>
+          </thead>
+          <tbody id="invTableBody" class="bg-white divide-y divide-slate-100">
+            <tr class="skeleton-row"><td colspan="5"><div class="skeleton-box w-full"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
 </div>
 
 <!-- Modal: Record Transaction -->
-<div class="modal-overlay" id="txModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Record Transaction</h3>
-      <button class="modal-close" onclick="closeModal('txModal')">&times;</button>
+<div id="txModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-0 modal-overlay backdrop-blur-sm bg-slate-900/40">
+  <div class="bg-white rounded-2xl shadow-card w-full max-w-lg overflow-hidden modal-content">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      <h3 class="text-lg font-display font-semibold text-slate-800">Record Transaction</h3>
+      <button onclick="closeModal('txModal')" class="text-slate-400 hover:text-slate-500 transition-colors focus:outline-none p-1 rounded-md hover:bg-slate-100">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
     
-    <div style="display: flex; gap: 1rem;">
-      <div class="form-group" style="flex:1">
-        <label for="txType">Type</label>
-        <select id="txType" onchange="onTypeChange()">
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-        </select>
+    <div class="p-6 space-y-5">
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="txType">Type</label>
+          <select id="txType" onchange="onTypeChange()" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm">
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+        </div>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="txCategory">Category</label>
+          <select id="txCategory" onchange="onTypeChange()" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm">
+            <option value="sale">Sale</option>
+            <option value="purchase">Purchase</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group" style="flex:1">
-        <label for="txCategory">Category</label>
-        <select id="txCategory" onchange="onTypeChange()">
-          <option value="sale">Sale</option>
-          <option value="purchase">Purchase</option>
-          <option value="other">Other</option>
-        </select>
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1" for="txAmount">Amount ($)</label>
+        <input type="number" id="txAmount" placeholder="0.00" min="0" step="0.01" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm font-semibold" />
       </div>
-    </div>
-    
-    <div class="form-group">
-      <label for="txAmount">Amount ($)</label>
-      <input type="number" id="txAmount" placeholder="0.00" min="0" step="0.01" />
-    </div>
-    
-    <div style="display: flex; gap: 1rem;">
-      <div class="form-group" id="productGroup" style="flex:2">
-        <label for="txProduct">Product (for sales)</label>
-        <select id="txProduct">
-          <option value="">— Select product —</option>
-        </select>
+      
+      <div class="flex gap-4">
+        <div class="flex-[2]" id="productGroup">
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="txProduct">Product (for sales)</label>
+          <select id="txProduct" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm">
+            <option value="">— Select product —</option>
+          </select>
+        </div>
+        <div class="flex-1" id="qtyGroup">
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="txQty">Quantity</label>
+          <input type="number" id="txQty" placeholder="1" min="1" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
+        </div>
       </div>
-      <div class="form-group" id="qtyGroup" style="flex:1">
-        <label for="txQty">Quantity</label>
-        <input type="number" id="txQty" placeholder="1" min="1" />
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1" for="txDesc">Description <span class="text-slate-400 font-normal">(optional)</span></label>
+        <input type="text" id="txDesc" placeholder="Optional note" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
       </div>
+      
+      <div id="txError" class="text-sm text-red-500 font-medium hidden"></div>
     </div>
     
-    <div class="form-group">
-      <label for="txDesc">Description</label>
-      <input type="text" id="txDesc" placeholder="Optional note" />
-    </div>
-    
-    <div id="txError" class="error-msg" style="text-align:left; margin-bottom:1rem"></div>
-    
-    <div style="display:flex; justify-content:flex-end; gap:0.5rem">
-      <button class="btn btn-outline" onclick="closeModal('txModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="addTransaction()">Record Transaction</button>
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+      <button onclick="closeModal('txModal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+        Cancel
+      </button>
+      <button id="addBtn" onclick="addTransaction()" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all flex items-center">
+        Record Transaction
+      </button>
     </div>
   </div>
 </div>
 
 <script src="app.js"></script>
+<script src="components/layout.js"></script>
+<script src="components/toast.js"></script>
 <script>
   if (!checkAuth()) {}
-  setActiveNav();
+  initLayout('finance', 'Finance & Accounting');
 
   let transactions = [];
 
   function showTab(tab) {
-    ['tx', 'inv'].forEach(t => {
-      document.getElementById(`tab-${t}`).style.display = t === tab ? '' : 'none';
-      document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).className =
-        t === tab ? 'btn btn-primary' : 'btn btn-outline';
-    });
+    document.getElementById('tab-tx').classList.toggle('hidden', tab !== 'tx');
+    document.getElementById('tab-inv').classList.toggle('hidden', tab !== 'inv');
+    
+    const activeClass = "border-primary-500 text-primary-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors";
+    const inactiveClass = "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors";
+    
+    document.getElementById('tabTx').className = tab === 'tx' ? activeClass : inactiveClass;
+    document.getElementById('tabInv').className = tab === 'inv' ? activeClass : inactiveClass;
+    
     if (tab === 'inv') loadInvoices();
   }
 
@@ -174,45 +237,64 @@
       const income   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
       const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
       const net = income - expenses;
+      
       document.getElementById('cardIncome').textContent  = fmtMoney(income);
       document.getElementById('cardExpense').textContent = fmtMoney(expenses);
       document.getElementById('cardCount').textContent   = transactions.length;
+      
       const netEl = document.getElementById('cardNet');
       netEl.textContent = fmtMoney(net);
-      netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--text)';
-      document.getElementById('txCount').textContent = `${transactions.length} record(s)`;
+      netEl.className = `text-2xl font-display font-bold ${net >= 0 ? 'text-slate-900' : 'text-red-600'}`;
+      
+      document.getElementById('txCount').textContent = `${transactions.length} Records`;
 
       const tbody = document.getElementById('txTableBody');
       if (transactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty">No transactions yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-sm text-slate-500">No transactions yet.</td></tr>';
         return;
       }
-      tbody.innerHTML = transactions.map(t => `
-        <tr>
-          <td style="color:var(--muted)">#${t.id}</td>
-          <td><span class="badge ${t.type === 'income' ? 'badge-green' : 'badge-red'}">${t.type}</span></td>
-          <td style="text-transform:capitalize">${t.category}</td>
-          <td style="font-weight:600">${fmtMoney(t.amount)}</td>
-          <td style="color:var(--muted)">${t.description || '—'}</td>
-          <td style="color:var(--muted)">${t.product_id ? `Prod #${t.product_id}` : '—'}</td>
-          <td style="color:var(--muted)">${t.quantity || '—'}</td>
-          <td style="color:var(--muted)">${fmtDate(t.created_at)}</td>
-          <td>
+      
+      tbody.innerHTML = transactions.map(t => {
+        const isInc = t.type === 'income';
+        const badge = isInc ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+        return `
+        <tr class="hover:bg-slate-50 transition-colors group">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${badge}">
+              ${t.type}
+            </span>
+            <div class="text-xs text-slate-500 mt-1 capitalize">${t.category}</div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="text-sm text-slate-900 truncate max-w-xs">${t.description || '—'}</div>
+            ${t.product_id ? `<div class="text-xs text-slate-400 mt-0.5">Product ID: ${t.product_id}</div>` : ''}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${isInc ? 'text-green-600' : 'text-red-600'}">
+            ${isInc ? '+' : '-'}${fmtMoney(t.amount)}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+            ${fmtDate(t.created_at)}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
             ${t.category === 'sale' && t.product_id ?
-              `<button class="btn btn-outline btn-sm" onclick="generateInvoice(${t.id}, ${t.product_id}, ${t.amount}, ${t.quantity || 1})">Invoice</button>` :
-              '—'}
+              `<button onclick="generateInvoice(${t.id}, ${t.product_id}, ${t.amount}, ${t.quantity || 1})" class="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-all opacity-0 group-hover:opacity-100">
+                <svg class="mr-1.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Invoice
+              </button>` : '—'}
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     } catch (err) {
-      document.getElementById('txTableBody').innerHTML =
-        `<tr><td colspan="9" class="empty" style="color:var(--danger)">${err.message}</td></tr>`;
+      document.getElementById('txTableBody').innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-sm text-red-500 text-center">Failed to load transactions.</td></tr>`;
+      showToast(err.message, 'error');
     }
   }
 
   async function addTransaction() {
-    const errEl    = document.getElementById('txError');
-    errEl.textContent = '';
+    const errEl = document.getElementById('txError');
+    const btn = document.getElementById('addBtn');
+    errEl.classList.add('hidden');
+    
     const type     = document.getElementById('txType').value;
     const category = document.getElementById('txCategory').value;
     const amount   = parseFloat(document.getElementById('txAmount').value);
@@ -220,24 +302,38 @@
     const productId= parseInt(document.getElementById('txProduct').value) || null;
     const qty      = parseInt(document.getElementById('txQty').value) || null;
 
-    if (isNaN(amount) || amount <= 0) { errEl.textContent = 'Please enter a valid amount.'; return; }
-    if (category === 'sale' && !productId) { errEl.textContent = 'Please select a product for a sale.'; return; }
+    if (isNaN(amount) || amount <= 0) { 
+      errEl.textContent = 'Please enter a valid amount.'; 
+      errEl.classList.remove('hidden'); return; 
+    }
+    if (category === 'sale' && !productId) { 
+      errEl.textContent = 'Please select a product for a sale.'; 
+      errEl.classList.remove('hidden'); return; 
+    }
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Saving...';
+    btn.disabled = true;
 
     const body = JSON.stringify({ type, category, amount, description: desc || null, product_id: productId, quantity: qty });
     try {
       await apiFetch(`${FINANCE_URL}/transactions`, { method: 'POST', headers: authHeaders(), body });
       
-      // Reset form
       document.getElementById('txAmount').value = '';
       document.getElementById('txDesc').value   = '';
       document.getElementById('txProduct').value = '';
       document.getElementById('txQty').value    = '';
       
       closeModal('txModal');
+      showToast('Transaction recorded successfully.', 'success');
       loadTransactions();
-      loadProductOptions(); // refresh stock counts
+      loadProductOptions(); 
     } catch (err) {
       errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
   }
 
@@ -251,34 +347,44 @@
         headers: authHeaders(),
         body: JSON.stringify({ transaction_id: txId, product_name: productName, quantity: qty, unit_price: unitPrice }),
       });
-      alert('✅ Invoice generated! Check the Invoices tab.');
+      showToast('Invoice generated successfully.', 'success');
       showTab('inv');
-    } catch (err) { alert(err.message); }
+    } catch (err) { showToast(err.message, 'error'); }
   }
 
   async function loadInvoices() {
     try {
       const invoices = await apiFetch(`${INVOICE_URL}/invoices`, { headers: authHeaders() }) || [];
-      document.getElementById('invCount').textContent = `${invoices.length} invoice(s)`;
+      document.getElementById('invCount').textContent = `${invoices.length} Invoices`;
       const tbody = document.getElementById('invTableBody');
+      
       if (invoices.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty">No invoices yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-sm text-slate-500">No invoices generated yet.</td></tr>';
         return;
       }
+      
       tbody.innerHTML = invoices.map(inv => `
-        <tr>
-          <td style="color:var(--muted)">#${inv.id}</td>
-          <td>TX-${inv.transaction_id}</td>
-          <td><strong>${inv.product_name}</strong></td>
-          <td>${inv.quantity}</td>
-          <td style="color:var(--muted)">${fmtMoney(inv.unit_price)}</td>
-          <td style="font-weight:600">${fmtMoney(inv.total)}</td>
-          <td style="color:var(--muted)">${fmtDate(inv.created_at)}</td>
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600">
+            #INV-${inv.id}
+            <div class="text-xs font-normal text-slate-400 mt-0.5">Ref: TX-${inv.transaction_id}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-semibold">
+            ${inv.product_name}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+            ${inv.quantity} &times; ${fmtMoney(inv.unit_price)}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">
+            ${fmtMoney(inv.total)}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+            ${fmtDate(inv.created_at)}
+          </td>
         </tr>
       `).join('');
     } catch (err) {
-      document.getElementById('invTableBody').innerHTML =
-        `<tr><td colspan="7" class="empty" style="color:var(--danger)">${err.message}</td></tr>`;
+      document.getElementById('invTableBody').innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-sm text-red-500 text-center">Failed to load invoices.</td></tr>`;
     }
   }
 
