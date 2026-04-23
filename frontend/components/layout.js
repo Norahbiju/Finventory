@@ -28,18 +28,18 @@ function renderSidebar(activePage) {
                 const iconClasses = isActive ? "text-primary-600" : "text-slate-400 group-hover:text-slate-600";
                 
                 // Replace the generic text color in the SVG with the specific icon class
-                const styledIcon = item.icon.replace('class="', \`class="\${iconClasses} \`);
+                const styledIcon = item.icon.replace('class="', `class="${iconClasses} `);
 
-                return \`
-                <a href="\${item.link}" class="\${baseClasses} \${activeClasses}">
-                    \${styledIcon}
-                    \${item.name}
-                </a>\`;
+                return `
+                <a href="${item.link}" class="${baseClasses} ${activeClasses}">
+                    ${styledIcon}
+                    ${item.name}
+                </a>`;
             }).join('')}
         </nav>
         <div class="p-4 border-t border-slate-100">
             <button onclick="logout()" class="flex w-full items-center px-3 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all duration-200 group">
-                \${ICONS.logout.replace('class="', 'class="text-slate-400 group-hover:text-red-500 ')}
+                ${ICONS.logout.replace('class="', 'class="text-slate-400 group-hover:text-red-500 ')}
                 Sign out
             </button>
         </div>
@@ -56,15 +56,15 @@ function renderTopbar(pageTitle) {
 
   const html = `
     <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 transition-all">
-        <h1 class="text-xl font-display font-semibold text-slate-800 tracking-tight">\${pageTitle}</h1>
+        <h1 class="text-xl font-display font-semibold text-slate-800 tracking-tight">${pageTitle}</h1>
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-3">
                 <div class="text-right hidden sm:block">
-                    <p class="text-sm font-semibold text-slate-700 leading-tight">\${username}</p>
-                    <p class="text-xs text-slate-500 capitalize font-medium">\${role}</p>
+                    <p class="text-sm font-semibold text-slate-700 leading-tight">${username}</p>
+                    <p class="text-xs text-slate-500 capitalize font-medium">${role}</p>
                 </div>
                 <div class="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-brand-end flex items-center justify-center text-white font-semibold shadow-sm ring-2 ring-white">
-                    \${initial}
+                    ${initial}
                 </div>
             </div>
         </div>
