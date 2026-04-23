@@ -1,0 +1,26 @@
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+
+class TransactionCreate(BaseModel):
+    type: str           # "income" or "expense"
+    category: str       # "sale", "purchase", "other"
+    amount: float
+    description: Optional[str] = None
+    product_id: Optional[int] = None
+    quantity: Optional[int] = None
+
+
+class TransactionOut(BaseModel):
+    id: int
+    type: str
+    category: str
+    amount: float
+    description: Optional[str]
+    product_id: Optional[int]
+    quantity: Optional[int]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

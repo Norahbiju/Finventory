@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finventory — Admin Dashboard</title>
+  <meta name="description" content="Admin dashboard showing all registered users." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="dashboard.html">📦 Finventory</a>
+  <div class="nav-links">
+    <span id="adminLabel" style="font-size:0.85rem;color:#64748b;margin-right:0.5rem;"></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <h1 class="page-title">👤 User Management</h1>
+
+  <div class="cards" id="statsCards">
+    <div class="card"><div class="label">Total Users</div><div class="value blue" id="statTotal">—</div></div>
+    <div class="card"><div class="label">Admins</div><div class="value" id="statAdmins">—</div></div>
+    <div class="card"><div class="label">Regular Users</div><div class="value" id="statUsers">—</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody">
+        <tr><td colspan="5" class="empty">Loading users...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if (!checkAuth()) {}
+  if (getRole() !== 'admin') window.location.href = 'dashboard.html';
+
+  document.getElementById('adminLabel').textContent = `Logged in as ${getUsername()}`;
+
+  async function loadUsers() {
+    try {
+      const users = await apiFetch(`${AUTH_URL}/auth/users?token=${getToken()}`);
+      if (!users) return;
+      document.getElementById('statTotal').textContent  = users.length;
+      document.getElementById('statAdmins').textContent = users.filter(u => u.role === 'admin').length;
+      document.getElementById('statUsers').textContent  = users.filter(u => u.role === 'user').length;
+
+      const tbody = document.getElementById('userTableBody');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No users found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map((u, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${u.username}</strong></td>
+          <td>${u.email}</td>
+          <td><span class="badge ${u.role === 'admin' ? 'badge-blue' : 'badge-green'}">${u.role}</span></td>
+          <td>${fmtDate(u.created_at)}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      document.getElementById('userTableBody').innerHTML =
+        `<tr><td colspan="5" class="empty" style="color:red">${err.message}</td></tr>`;
+    }
+  }
+
+  loadUsers();
+</script>
+</body>
+</html>

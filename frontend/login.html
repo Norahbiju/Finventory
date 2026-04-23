@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finventory — Login</title>
+  <meta name="description" content="Login to Finventory — your inventory and finance management tool." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="logo">📦 Finventory</div>
+    <div class="tagline">Inventory & Finance, simplified.</div>
+
+    <!-- Login Form -->
+    <div id="loginSection">
+      <div class="form-group">
+        <label for="loginUsername">Username</label>
+        <input type="text" id="loginUsername" placeholder="Enter username" />
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter password" />
+      </div>
+      <button class="btn btn-primary login-btn" onclick="doLogin()">Login</button>
+      <div class="error-msg" id="loginError"></div>
+      <div class="login-toggle">No account? <a onclick="toggleForms()">Sign up</a></div>
+    </div>
+
+    <!-- Signup Form -->
+    <div id="signupSection" style="display:none">
+      <div class="form-group">
+        <label for="signupUsername">Username</label>
+        <input type="text" id="signupUsername" placeholder="Choose a username" />
+      </div>
+      <div class="form-group">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" placeholder="your@email.com" />
+      </div>
+      <div class="form-group">
+        <label for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" placeholder="Create a password" />
+      </div>
+      <div class="form-group">
+        <label for="signupRole">Role</label>
+        <select id="signupRole">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="btn btn-primary login-btn" onclick="doSignup()">Create Account</button>
+      <div class="error-msg" id="signupError"></div>
+      <div class="login-toggle">Already have an account? <a onclick="toggleForms()">Login</a></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  // If already logged in, redirect
+  if (getToken()) {
+    window.location.href = getRole() === 'admin' ? 'admin.html' : 'dashboard.html';
+  }
+
+  function toggleForms() {
+    const login  = document.getElementById('loginSection');
+    const signup = document.getElementById('signupSection');
+    login.style.display  = login.style.display  === 'none' ? '' : 'none';
+    signup.style.display = signup.style.display === 'none' ? '' : 'none';
+  }
+
+  async function doLogin() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    if (!username || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+    try {
+      const data = await apiFetch(`${AUTH_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!data) return;
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('username', data.username);
+      window.location.href = data.role === 'admin' ? 'admin.html' : 'dashboard.html';
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  }
+
+  async function doSignup() {
+    const username = document.getElementById('signupUsername').value.trim();
+    const email    = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const role     = document.getElementById('signupRole').value;
+    const errEl    = document.getElementById('signupError');
+    errEl.textContent = '';
+    if (!username || !email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+    try {
+      await apiFetch(`${AUTH_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password, role }),
+      });
+      errEl.style.color = 'green';
+      errEl.textContent = 'Account created! You can now login.';
+      setTimeout(toggleForms, 1500);
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  }
+
+  // Allow Enter key to submit
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (document.getElementById('loginSection').style.display !== 'none') doLogin();
+      else doSignup();
+    }
+  });
+</script>
+</body>
+</html>

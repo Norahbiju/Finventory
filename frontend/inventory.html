@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finventory — Inventory</title>
+  <meta name="description" content="Manage your products and stock levels." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="dashboard.html">📦 Finventory</a>
+  <div class="nav-links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="inventory.html">Inventory</a>
+    <a href="finance.html">Finance</a>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <h1 class="page-title">📦 Inventory</h1>
+
+  <!-- Add / Edit Form -->
+  <div class="form-panel">
+    <h3 id="formTitle">Add New Product</h3>
+    <input type="hidden" id="editId" />
+    <div class="form-row">
+      <div class="form-group">
+        <label for="pName">Product Name</label>
+        <input type="text" id="pName" placeholder="e.g. Laptop" />
+      </div>
+      <div class="form-group">
+        <label for="pPrice">Price ($)</label>
+        <input type="number" id="pPrice" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label for="pStock">Stock (units)</label>
+        <input type="number" id="pStock" placeholder="0" min="0" />
+      </div>
+      <div class="form-group" style="flex:2">
+        <label for="pDesc">Description (optional)</label>
+        <input type="text" id="pDesc" placeholder="Short description" />
+      </div>
+      <div class="form-group" style="min-width:auto">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="saveProduct()">Save</button>
+        <button class="btn btn-outline mt-1" onclick="resetForm()" style="margin-left:0.5rem">Cancel</button>
+      </div>
+    </div>
+    <div id="formError" class="error-msg" style="margin-top:0.5rem"></div>
+  </div>
+
+  <!-- Products Table -->
+  <div class="section-header">
+    <h2>All Products</h2>
+    <span id="productCount" style="font-size:0.85rem;color:var(--muted)"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Name</th><th>Description</th><th>Price</th><th>Stock</th><th>Added</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="productTableBody">
+        <tr><td colspan="7" class="empty">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if (!checkAuth()) {}
+  setActiveNav();
+  let products = [];
+
+  async function loadProducts() {
+    try {
+      products = await apiFetch(`${INVENTORY_URL}/products`, { headers: authHeaders() }) || [];
+      document.getElementById('productCount').textContent = `${products.length} product(s)`;
+      const tbody = document.getElementById('productTableBody');
+      if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">No products yet. Add one above!</td></tr>';
+        return;
+      }
+      tbody.innerHTML = products.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td><strong>${p.name}</strong></td>
+          <td>${p.description || '—'}</td>
+          <td>${fmtMoney(p.price)}</td>
+          <td>
+            <span class="badge ${p.stock < 10 ? 'badge-red' : p.stock < 30 ? 'badge-yellow' : 'badge-green'}">
+              ${p.stock}
+            </span>
+          </td>
+          <td>${fmtDate(p.created_at)}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})" style="margin-left:0.3rem">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      document.getElementById('productTableBody').innerHTML =
+        `<tr><td colspan="7" class="empty" style="color:red">${err.message}</td></tr>`;
+    }
+  }
+
+  async function saveProduct() {
+    const errEl = document.getElementById('formError');
+    errEl.textContent = '';
+    const id    = document.getElementById('editId').value;
+    const name  = document.getElementById('pName').value.trim();
+    const price = parseFloat(document.getElementById('pPrice').value);
+    const stock = parseInt(document.getElementById('pStock').value);
+    const desc  = document.getElementById('pDesc').value.trim();
+
+    if (!name || isNaN(price) || isNaN(stock)) { errEl.textContent = 'Name, price, and stock are required.'; return; }
+
+    const body = JSON.stringify({ name, price, stock, description: desc || null });
+    try {
+      if (id) {
+        await apiFetch(`${INVENTORY_URL}/products/${id}`, { method: 'PUT', headers: authHeaders(), body });
+      } else {
+        await apiFetch(`${INVENTORY_URL}/products`, { method: 'POST', headers: authHeaders(), body });
+      }
+      resetForm();
+      loadProducts();
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    try {
+      await apiFetch(`${INVENTORY_URL}/products/${id}`, { method: 'DELETE', headers: authHeaders() });
+      loadProducts();
+    } catch (err) { alert(err.message); }
+  }
+
+  function editProduct(id) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('editId').value = p.id;
+    document.getElementById('pName').value  = p.name;
+    document.getElementById('pPrice').value = p.price;
+    document.getElementById('pStock').value = p.stock;
+    document.getElementById('pDesc').value  = p.description || '';
+    document.getElementById('formTitle').textContent = 'Edit Product';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    document.getElementById('editId').value = '';
+    document.getElementById('pName').value  = '';
+    document.getElementById('pPrice').value = '';
+    document.getElementById('pStock').value = '';
+    document.getElementById('pDesc').value  = '';
+    document.getElementById('formTitle').textContent = 'Add New Product';
+    document.getElementById('formError').textContent = '';
+  }
+
+  loadProducts();
+</script>
+</body>
+</html>

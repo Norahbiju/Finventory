@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finventory — Finance</title>
+  <meta name="description" content="Track income, expenses, generate invoices, and view recommendations." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="dashboard.html">📦 Finventory</a>
+  <div class="nav-links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="inventory.html">Inventory</a>
+    <a href="finance.html">Finance</a>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <h1 class="page-title">💰 Finance</h1>
+
+  <!-- Summary Cards -->
+  <div class="cards">
+    <div class="card"><div class="label">Total Income</div><div class="value green" id="cardIncome">—</div></div>
+    <div class="card"><div class="label">Total Expenses</div><div class="value red" id="cardExpense">—</div></div>
+    <div class="card"><div class="label">Net Profit</div><div class="value" id="cardNet">—</div></div>
+    <div class="card"><div class="label">Transactions</div><div class="value blue" id="cardCount">—</div></div>
+  </div>
+
+  <!-- Add Transaction Form -->
+  <div class="form-panel">
+    <h3>Record Transaction</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="txType">Type</label>
+        <select id="txType" onchange="onTypeChange()">
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="txCategory">Category</label>
+        <select id="txCategory">
+          <option value="sale">Sale</option>
+          <option value="purchase">Purchase</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="txAmount">Amount ($)</label>
+        <input type="number" id="txAmount" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <div class="form-group" id="productGroup">
+        <label for="txProduct">Product (for sales)</label>
+        <select id="txProduct">
+          <option value="">— Select product —</option>
+        </select>
+      </div>
+      <div class="form-group" id="qtyGroup">
+        <label for="txQty">Quantity</label>
+        <input type="number" id="txQty" placeholder="1" min="1" />
+      </div>
+      <div class="form-group" style="flex:2">
+        <label for="txDesc">Description</label>
+        <input type="text" id="txDesc" placeholder="Optional note" />
+      </div>
+      <div class="form-group" style="min-width:auto">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="addTransaction()">Add</button>
+      </div>
+    </div>
+    <div id="txError" class="error-msg" style="margin-top:0.5rem"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+    <button class="btn btn-primary" id="tabTx" onclick="showTab('tx')">Transactions</button>
+    <button class="btn btn-outline" id="tabInv" onclick="showTab('inv')">Invoices</button>
+    <button class="btn btn-outline" id="tabRec" onclick="showTab('rec')">Recommendations</button>
+  </div>
+
+  <!-- Transactions Tab -->
+  <div id="tab-tx">
+    <div class="section-header">
+      <h2>All Transactions</h2>
+      <span id="txCount" style="font-size:0.85rem;color:var(--muted)"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Type</th><th>Category</th><th>Amount</th><th>Description</th><th>Product&nbsp;ID</th><th>Qty</th><th>Date</th><th>Invoice</th></tr>
+        </thead>
+        <tbody id="txTableBody"><tr><td colspan="9" class="empty">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Invoices Tab -->
+  <div id="tab-inv" style="display:none">
+    <div class="section-header">
+      <h2>All Invoices</h2>
+      <span id="invCount" style="font-size:0.85rem;color:var(--muted)"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Transaction ID</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Date</th></tr>
+        </thead>
+        <tbody id="invTableBody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recommendations Tab -->
+  <div id="tab-rec" style="display:none">
+    <div class="section-header"><h2>💡 Recommendations</h2></div>
+    <div id="recList"><div class="alert alert-info">Loading...</div></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if (!checkAuth()) {}
+  setActiveNav();
+
+  let transactions = [];
+
+  function showTab(tab) {
+    ['tx', 'inv', 'rec'].forEach(t => {
+      document.getElementById(`tab-${t}`).style.display = t === tab ? '' : 'none';
+      document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).className =
+        t === tab ? 'btn btn-primary' : 'btn btn-outline';
+    });
+    if (tab === 'inv') loadInvoices();
+    if (tab === 'rec') loadRecommendations();
+  }
+
+  function onTypeChange() {
+    const isSale = document.getElementById('txCategory').value === 'sale';
+    document.getElementById('productGroup').style.display = isSale ? '' : 'none';
+    document.getElementById('qtyGroup').style.display     = isSale ? '' : 'none';
+  }
+  document.getElementById('txCategory').addEventListener('change', onTypeChange);
+  onTypeChange();
+
+  async function loadProductOptions() {
+    try {
+      const products = await apiFetch(`${INVENTORY_URL}/products`, { headers: authHeaders() });
+      if (!products) return;
+      const sel = document.getElementById('txProduct');
+      sel.innerHTML = '<option value="">— Select product —</option>' +
+        products.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (Stock: ${p.stock})</option>`).join('');
+      sel.addEventListener('change', () => {
+        const opt = sel.options[sel.selectedIndex];
+        if (opt.dataset.price) document.getElementById('txAmount').value = opt.dataset.price;
+      });
+    } catch (e) { console.error(e); }
+  }
+
+  async function loadTransactions() {
+    try {
+      transactions = await apiFetch(`${FINANCE_URL}/transactions`, { headers: authHeaders() }) || [];
+      const income   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const net = income - expenses;
+      document.getElementById('cardIncome').textContent  = fmtMoney(income);
+      document.getElementById('cardExpense').textContent = fmtMoney(expenses);
+      document.getElementById('cardCount').textContent   = transactions.length;
+      const netEl = document.getElementById('cardNet');
+      netEl.textContent = fmtMoney(net);
+      netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--danger)';
+      document.getElementById('txCount').textContent = `${transactions.length} record(s)`;
+
+      const tbody = document.getElementById('txTableBody');
+      if (transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">No transactions yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = transactions.map(t => `
+        <tr>
+          <td>${t.id}</td>
+          <td><span class="badge ${t.type === 'income' ? 'badge-green' : 'badge-red'}">${t.type}</span></td>
+          <td>${t.category}</td>
+          <td><strong>${fmtMoney(t.amount)}</strong></td>
+          <td>${t.description || '—'}</td>
+          <td>${t.product_id || '—'}</td>
+          <td>${t.quantity || '—'}</td>
+          <td>${fmtDate(t.created_at)}</td>
+          <td>
+            ${t.category === 'sale' && t.product_id ?
+              `<button class="btn btn-outline btn-sm" onclick="generateInvoice(${t.id}, ${t.product_id}, ${t.amount}, ${t.quantity || 1})">🧾 Invoice</button>` :
+              '—'}
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      document.getElementById('txTableBody').innerHTML =
+        `<tr><td colspan="9" class="empty" style="color:red">${err.message}</td></tr>`;
+    }
+  }
+
+  async function addTransaction() {
+    const errEl    = document.getElementById('txError');
+    errEl.textContent = '';
+    const type     = document.getElementById('txType').value;
+    const category = document.getElementById('txCategory').value;
+    const amount   = parseFloat(document.getElementById('txAmount').value);
+    const desc     = document.getElementById('txDesc').value.trim();
+    const productId= parseInt(document.getElementById('txProduct').value) || null;
+    const qty      = parseInt(document.getElementById('txQty').value) || null;
+
+    if (isNaN(amount) || amount <= 0) { errEl.textContent = 'Please enter a valid amount.'; return; }
+    if (category === 'sale' && !productId) { errEl.textContent = 'Please select a product for a sale.'; return; }
+
+    const body = JSON.stringify({ type, category, amount, description: desc || null, product_id: productId, quantity: qty });
+    try {
+      await apiFetch(`${FINANCE_URL}/transactions`, { method: 'POST', headers: authHeaders(), body });
+      // Reset form
+      document.getElementById('txAmount').value = '';
+      document.getElementById('txDesc').value   = '';
+      document.getElementById('txProduct').value = '';
+      document.getElementById('txQty').value    = '';
+      loadTransactions();
+      loadProductOptions(); // refresh stock counts
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  }
+
+  async function generateInvoice(txId, productId, amount, qty) {
+    // Find product name from transactions list
+    const tx = transactions.find(t => t.id === txId);
+    const productName = prompt('Enter product name for invoice:', '');
+    if (!productName) return;
+    const unitPrice = qty > 0 ? amount / qty : amount;
+    try {
+      await apiFetch(`${INVOICE_URL}/invoices/generate`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ transaction_id: txId, product_name: productName, quantity: qty, unit_price: unitPrice }),
+      });
+      alert('✅ Invoice generated! Check the Invoices tab.');
+      showTab('inv');
+    } catch (err) { alert(err.message); }
+  }
+
+  async function loadInvoices() {
+    try {
+      const invoices = await apiFetch(`${INVOICE_URL}/invoices`, { headers: authHeaders() }) || [];
+      document.getElementById('invCount').textContent = `${invoices.length} invoice(s)`;
+      const tbody = document.getElementById('invTableBody');
+      if (invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">No invoices yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = invoices.map(inv => `
+        <tr>
+          <td>#${inv.id}</td>
+          <td>TX-${inv.transaction_id}</td>
+          <td>${inv.product_name}</td>
+          <td>${inv.quantity}</td>
+          <td>${fmtMoney(inv.unit_price)}</td>
+          <td><strong>${fmtMoney(inv.total)}</strong></td>
+          <td>${fmtDate(inv.created_at)}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      document.getElementById('invTableBody').innerHTML =
+        `<tr><td colspan="7" class="empty" style="color:red">${err.message}</td></tr>`;
+    }
+  }
+
+  async function loadRecommendations() {
+    try {
+      const recs = await apiFetch(`${INVOICE_URL}/recommendations`, { headers: authHeaders() });
+      if (!recs) return;
+      const typeMap = { low_stock: 'alert-warning', high_expense: 'alert-danger', low_selling: 'alert-info', ok: 'alert-success' };
+      document.getElementById('recList').innerHTML =
+        recs.map(r => `<div class="alert ${typeMap[r.type] || 'alert-info'}">${r.message}</div>`).join('');
+    } catch (err) {
+      document.getElementById('recList').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+    }
+  }
+
+  loadTransactions();
+  loadProductOptions();
+</script>
+</body>
+</html>

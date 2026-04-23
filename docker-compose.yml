@@ -1,0 +1,106 @@
+version: "3.9"
+
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: finventory_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finventory_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Auth Service (internal only, proxied via nginx /api/auth/) ─
+  auth_service:
+    build:
+      context: .
+      dockerfile: auth_service/Dockerfile
+    container_name: finventory_auth
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/finventory_db
+      SECRET_KEY: finventory_super_secret_key_2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Inventory Service (internal, proxied via nginx /api/inventory/) ─
+  inventory_service:
+    build:
+      context: .
+      dockerfile: inventory_service/Dockerfile
+    container_name: finventory_inventory
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/finventory_db
+      SECRET_KEY: finventory_super_secret_key_2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Finance Service (internal, proxied via nginx /api/finance/) ─
+  finance_service:
+    build:
+      context: .
+      dockerfile: finance_service/Dockerfile
+    container_name: finventory_finance
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/finventory_db
+      SECRET_KEY: finventory_super_secret_key_2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+    depends_on:
+      db:
+        condition: service_healthy
+      inventory_service:
+        condition: service_started
+
+  # ── Invoice Service (internal, proxied via nginx /api/invoice/) ─
+  invoice_service:
+    build:
+      context: .
+      dockerfile: invoice_service/Dockerfile
+    container_name: finventory_invoice
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/finventory_db
+      SECRET_KEY: finventory_super_secret_key_2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+    depends_on:
+      db:
+        condition: service_healthy
+      inventory_service:
+        condition: service_started
+
+  # ── Frontend (nginx on port 80 — the ONLY public-facing port) ─
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: finventory_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"       # Open port 80 in your EC2 Security Group
+    depends_on:
+      - auth_service
+      - inventory_service
+      - finance_service
+      - invoice_service
+
+volumes:
+  postgres_data:
