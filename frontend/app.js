@@ -28,16 +28,30 @@ function logout() {
 
 // --- Generic fetch helpers ---
 async function apiFetch(url, options = {}) {
+  let res;
   try {
-    const res = await fetch(url, options);
-    if (res.status === 401) { logout(); return null; }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Request failed');
-    return data;
-  } catch (err) {
-    console.error('API Error:', err);
-    throw err;
+    res = await fetch(url, options);
+  } catch (networkErr) {
+    console.error('Network Error:', networkErr);
+    throw new Error('Cannot reach the server. Please check your connection.');
   }
+
+  if (res.status === 401) { logout(); return null; }
+
+  // Safely parse: only attempt JSON if the content-type says so
+  const contentType = res.headers.get('content-type') || '';
+  let data;
+  if (contentType.includes('application/json')) {
+    data = await res.json();
+  } else {
+    const text = await res.text();
+    // Surface any readable server error message
+    if (!res.ok) throw new Error(text.trim() || `Server error (${res.status})`);
+    return text;
+  }
+
+  if (!res.ok) throw new Error(data.detail || data.message || `Server error (${res.status})`);
+  return data;
 }
 
 // --- Format helpers ---
