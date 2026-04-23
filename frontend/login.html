@@ -9,49 +9,57 @@
 </head>
 <body>
 <div class="login-page">
-  <div class="login-card">
-    <div class="logo">📦 Finventory</div>
-    <div class="tagline">Inventory & Finance, simplified.</div>
-
-    <!-- Login Form -->
-    <div id="loginSection">
-      <div class="form-group">
-        <label for="loginUsername">Username</label>
-        <input type="text" id="loginUsername" placeholder="Enter username" />
-      </div>
-      <div class="form-group">
-        <label for="loginPassword">Password</label>
-        <input type="password" id="loginPassword" placeholder="Enter password" />
-      </div>
-      <button class="btn btn-primary login-btn" onclick="doLogin()">Login</button>
-      <div class="error-msg" id="loginError"></div>
-      <div class="login-toggle">No account? <a onclick="toggleForms()">Sign up</a></div>
+  <div class="login-left">
+    <div class="glass-logo">
+      <div class="logo">📦 Finventory</div>
+      <div class="tagline">Inventory & Finance, simplified.</div>
     </div>
+  </div>
+  <div class="login-right">
+    <div class="login-card">
+      <h2 id="formTitle">Welcome back</h2>
+      
+      <!-- Login Form -->
+      <div id="loginSection">
+        <div class="form-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" placeholder="Enter your username" />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" />
+        </div>
+        <button class="btn btn-primary login-btn" onclick="doLogin()">Log in to account</button>
+        <div class="error-msg" id="loginError"></div>
+        <div class="login-toggle">Don't have an account? <a onclick="toggleForms()">Sign up</a></div>
+      </div>
 
-    <!-- Signup Form -->
-    <div id="signupSection" style="display:none">
-      <div class="form-group">
-        <label for="signupUsername">Username</label>
-        <input type="text" id="signupUsername" placeholder="Choose a username" />
+      <!-- Signup Form -->
+      <div id="signupSection" style="display:none">
+        <div class="form-group">
+          <label for="signupUsername">Username</label>
+          <input type="text" id="signupUsername" placeholder="Choose a username" />
+        </div>
+        <div class="form-group">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" placeholder="your@email.com" />
+        </div>
+        <div class="form-group">
+          <label for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" placeholder="Create a password" />
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <div class="role-toggle-group">
+            <div class="role-toggle-btn active" id="roleUser" onclick="setRole('user')">User</div>
+            <div class="role-toggle-btn" id="roleAdmin" onclick="setRole('admin')">Admin</div>
+          </div>
+          <input type="hidden" id="signupRole" value="user" />
+        </div>
+        <button class="btn btn-primary login-btn" onclick="doSignup()">Create Account</button>
+        <div class="error-msg" id="signupError"></div>
+        <div class="login-toggle">Already have an account? <a onclick="toggleForms()">Log in</a></div>
       </div>
-      <div class="form-group">
-        <label for="signupEmail">Email</label>
-        <input type="email" id="signupEmail" placeholder="your@email.com" />
-      </div>
-      <div class="form-group">
-        <label for="signupPassword">Password</label>
-        <input type="password" id="signupPassword" placeholder="Create a password" />
-      </div>
-      <div class="form-group">
-        <label for="signupRole">Role</label>
-        <select id="signupRole">
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <button class="btn btn-primary login-btn" onclick="doSignup()">Create Account</button>
-      <div class="error-msg" id="signupError"></div>
-      <div class="login-toggle">Already have an account? <a onclick="toggleForms()">Login</a></div>
     </div>
   </div>
 </div>
@@ -63,19 +71,41 @@
     window.location.href = getRole() === 'admin' ? 'admin.html' : 'dashboard.html';
   }
 
+  function setRole(role) {
+    document.getElementById('signupRole').value = role;
+    document.getElementById('roleUser').classList.toggle('active', role === 'user');
+    document.getElementById('roleAdmin').classList.toggle('active', role === 'admin');
+  }
+
   function toggleForms() {
     const login  = document.getElementById('loginSection');
     const signup = document.getElementById('signupSection');
-    login.style.display  = login.style.display  === 'none' ? '' : 'none';
-    signup.style.display = signup.style.display === 'none' ? '' : 'none';
+    const title  = document.getElementById('formTitle');
+    
+    if (login.style.display === 'none') {
+      login.style.display = '';
+      signup.style.display = 'none';
+      title.textContent = 'Welcome back';
+    } else {
+      login.style.display = 'none';
+      signup.style.display = '';
+      title.textContent = 'Create an account';
+    }
   }
 
   async function doLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
     const errEl = document.getElementById('loginError');
-    errEl.textContent = '';
+    errEl.innerHTML = '';
+    
     if (!username || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+    
+    const btn = document.querySelector('#loginSection .login-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner" style="border-top-color: white"></span>';
+    btn.disabled = true;
+
     try {
       const data = await apiFetch(`${AUTH_URL}/auth/login`, {
         method: 'POST',
@@ -89,6 +119,8 @@
       window.location.href = data.role === 'admin' ? 'admin.html' : 'dashboard.html';
     } catch (err) {
       errEl.textContent = err.message;
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
   }
 
@@ -99,22 +131,35 @@
     const role     = document.getElementById('signupRole').value;
     const errEl    = document.getElementById('signupError');
     errEl.textContent = '';
+    
     if (!username || !email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+    
+    const btn = document.querySelector('#signupSection .login-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner" style="border-top-color: white"></span>';
+    btn.disabled = true;
+
     try {
       await apiFetch(`${AUTH_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, role }),
       });
-      errEl.style.color = 'green';
-      errEl.textContent = 'Account created! You can now login.';
-      setTimeout(toggleForms, 1500);
+      errEl.style.color = 'var(--success)';
+      errEl.textContent = 'Account created! You can now log in.';
+      setTimeout(() => {
+        errEl.style.color = '';
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        toggleForms();
+      }, 1500);
     } catch (err) {
       errEl.textContent = err.message;
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
   }
 
-  // Allow Enter key to submit
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       if (document.getElementById('loginSection').style.display !== 'none') doLogin();

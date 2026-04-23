@@ -14,86 +14,43 @@
   <div class="nav-links">
     <a href="dashboard.html">Dashboard</a>
     <a href="inventory.html">Inventory</a>
-    <a href="finance.html">Finance</a>
+    <a href="finance.html" class="active">Finance</a>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </nav>
 
 <div class="page">
-  <h1 class="page-title">💰 Finance</h1>
+  <div class="section-header">
+    <h1 class="page-title" style="margin-bottom:0">💰 Finance</h1>
+    <button class="btn btn-primary" onclick="openModal('txModal')">+ Record Transaction</button>
+  </div>
 
   <!-- Summary Cards -->
-  <div class="cards">
+  <div class="cards" style="margin-bottom: 2rem;">
     <div class="card"><div class="label">Total Income</div><div class="value green" id="cardIncome">—</div></div>
     <div class="card"><div class="label">Total Expenses</div><div class="value red" id="cardExpense">—</div></div>
     <div class="card"><div class="label">Net Profit</div><div class="value" id="cardNet">—</div></div>
     <div class="card"><div class="label">Transactions</div><div class="value blue" id="cardCount">—</div></div>
   </div>
 
-  <!-- Add Transaction Form -->
-  <div class="form-panel">
-    <h3>Record Transaction</h3>
-    <div class="form-row">
-      <div class="form-group">
-        <label for="txType">Type</label>
-        <select id="txType" onchange="onTypeChange()">
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="txCategory">Category</label>
-        <select id="txCategory">
-          <option value="sale">Sale</option>
-          <option value="purchase">Purchase</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="txAmount">Amount ($)</label>
-        <input type="number" id="txAmount" placeholder="0.00" min="0" step="0.01" />
-      </div>
-      <div class="form-group" id="productGroup">
-        <label for="txProduct">Product (for sales)</label>
-        <select id="txProduct">
-          <option value="">— Select product —</option>
-        </select>
-      </div>
-      <div class="form-group" id="qtyGroup">
-        <label for="txQty">Quantity</label>
-        <input type="number" id="txQty" placeholder="1" min="1" />
-      </div>
-      <div class="form-group" style="flex:2">
-        <label for="txDesc">Description</label>
-        <input type="text" id="txDesc" placeholder="Optional note" />
-      </div>
-      <div class="form-group" style="min-width:auto">
-        <label>&nbsp;</label>
-        <button class="btn btn-primary" onclick="addTransaction()">Add</button>
-      </div>
-    </div>
-    <div id="txError" class="error-msg" style="margin-top:0.5rem"></div>
-  </div>
-
   <!-- Tabs -->
-  <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+  <div style="display:flex;gap:0.75rem;margin-bottom:1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
     <button class="btn btn-primary" id="tabTx" onclick="showTab('tx')">Transactions</button>
     <button class="btn btn-outline" id="tabInv" onclick="showTab('inv')">Invoices</button>
-    <button class="btn btn-outline" id="tabRec" onclick="showTab('rec')">Recommendations</button>
   </div>
 
   <!-- Transactions Tab -->
   <div id="tab-tx">
     <div class="section-header">
-      <h2>All Transactions</h2>
+      <h2>Transaction History</h2>
       <span id="txCount" style="font-size:0.85rem;color:var(--muted)"></span>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>ID</th><th>Type</th><th>Category</th><th>Amount</th><th>Description</th><th>Product&nbsp;ID</th><th>Qty</th><th>Date</th><th>Invoice</th></tr>
+          <tr><th>ID</th><th>Type</th><th>Category</th><th>Amount</th><th>Description</th><th>Product</th><th>Qty</th><th>Date</th><th>Action</th></tr>
         </thead>
-        <tbody id="txTableBody"><tr><td colspan="9" class="empty">Loading...</td></tr></tbody>
+        <tbody id="txTableBody"><tr><td colspan="9" class="empty"><span class="spinner"></span></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -101,23 +58,75 @@
   <!-- Invoices Tab -->
   <div id="tab-inv" style="display:none">
     <div class="section-header">
-      <h2>All Invoices</h2>
+      <h2>Generated Invoices</h2>
       <span id="invCount" style="font-size:0.85rem;color:var(--muted)"></span>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>ID</th><th>Transaction ID</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Date</th></tr>
+          <tr><th>ID</th><th>Ref TX</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Date</th></tr>
         </thead>
-        <tbody id="invTableBody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+        <tbody id="invTableBody"><tr><td colspan="7" class="empty"><span class="spinner"></span></td></tr></tbody>
       </table>
     </div>
   </div>
+</div>
 
-  <!-- Recommendations Tab -->
-  <div id="tab-rec" style="display:none">
-    <div class="section-header"><h2>💡 Recommendations</h2></div>
-    <div id="recList"><div class="alert alert-info">Loading...</div></div>
+<!-- Modal: Record Transaction -->
+<div class="modal-overlay" id="txModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Record Transaction</h3>
+      <button class="modal-close" onclick="closeModal('txModal')">&times;</button>
+    </div>
+    
+    <div style="display: flex; gap: 1rem;">
+      <div class="form-group" style="flex:1">
+        <label for="txType">Type</label>
+        <select id="txType" onchange="onTypeChange()">
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label for="txCategory">Category</label>
+        <select id="txCategory" onchange="onTypeChange()">
+          <option value="sale">Sale</option>
+          <option value="purchase">Purchase</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="txAmount">Amount ($)</label>
+      <input type="number" id="txAmount" placeholder="0.00" min="0" step="0.01" />
+    </div>
+    
+    <div style="display: flex; gap: 1rem;">
+      <div class="form-group" id="productGroup" style="flex:2">
+        <label for="txProduct">Product (for sales)</label>
+        <select id="txProduct">
+          <option value="">— Select product —</option>
+        </select>
+      </div>
+      <div class="form-group" id="qtyGroup" style="flex:1">
+        <label for="txQty">Quantity</label>
+        <input type="number" id="txQty" placeholder="1" min="1" />
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="txDesc">Description</label>
+      <input type="text" id="txDesc" placeholder="Optional note" />
+    </div>
+    
+    <div id="txError" class="error-msg" style="text-align:left; margin-bottom:1rem"></div>
+    
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem">
+      <button class="btn btn-outline" onclick="closeModal('txModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addTransaction()">Record Transaction</button>
+    </div>
   </div>
 </div>
 
@@ -129,13 +138,12 @@
   let transactions = [];
 
   function showTab(tab) {
-    ['tx', 'inv', 'rec'].forEach(t => {
+    ['tx', 'inv'].forEach(t => {
       document.getElementById(`tab-${t}`).style.display = t === tab ? '' : 'none';
       document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).className =
         t === tab ? 'btn btn-primary' : 'btn btn-outline';
     });
     if (tab === 'inv') loadInvoices();
-    if (tab === 'rec') loadRecommendations();
   }
 
   function onTypeChange() {
@@ -171,7 +179,7 @@
       document.getElementById('cardCount').textContent   = transactions.length;
       const netEl = document.getElementById('cardNet');
       netEl.textContent = fmtMoney(net);
-      netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--danger)';
+      netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--text)';
       document.getElementById('txCount').textContent = `${transactions.length} record(s)`;
 
       const tbody = document.getElementById('txTableBody');
@@ -181,24 +189,24 @@
       }
       tbody.innerHTML = transactions.map(t => `
         <tr>
-          <td>${t.id}</td>
+          <td style="color:var(--muted)">#${t.id}</td>
           <td><span class="badge ${t.type === 'income' ? 'badge-green' : 'badge-red'}">${t.type}</span></td>
-          <td>${t.category}</td>
-          <td><strong>${fmtMoney(t.amount)}</strong></td>
-          <td>${t.description || '—'}</td>
-          <td>${t.product_id || '—'}</td>
-          <td>${t.quantity || '—'}</td>
-          <td>${fmtDate(t.created_at)}</td>
+          <td style="text-transform:capitalize">${t.category}</td>
+          <td style="font-weight:600">${fmtMoney(t.amount)}</td>
+          <td style="color:var(--muted)">${t.description || '—'}</td>
+          <td style="color:var(--muted)">${t.product_id ? `Prod #${t.product_id}` : '—'}</td>
+          <td style="color:var(--muted)">${t.quantity || '—'}</td>
+          <td style="color:var(--muted)">${fmtDate(t.created_at)}</td>
           <td>
             ${t.category === 'sale' && t.product_id ?
-              `<button class="btn btn-outline btn-sm" onclick="generateInvoice(${t.id}, ${t.product_id}, ${t.amount}, ${t.quantity || 1})">🧾 Invoice</button>` :
+              `<button class="btn btn-outline btn-sm" onclick="generateInvoice(${t.id}, ${t.product_id}, ${t.amount}, ${t.quantity || 1})">Invoice</button>` :
               '—'}
           </td>
         </tr>
       `).join('');
     } catch (err) {
       document.getElementById('txTableBody').innerHTML =
-        `<tr><td colspan="9" class="empty" style="color:red">${err.message}</td></tr>`;
+        `<tr><td colspan="9" class="empty" style="color:var(--danger)">${err.message}</td></tr>`;
     }
   }
 
@@ -218,11 +226,14 @@
     const body = JSON.stringify({ type, category, amount, description: desc || null, product_id: productId, quantity: qty });
     try {
       await apiFetch(`${FINANCE_URL}/transactions`, { method: 'POST', headers: authHeaders(), body });
+      
       // Reset form
       document.getElementById('txAmount').value = '';
       document.getElementById('txDesc').value   = '';
       document.getElementById('txProduct').value = '';
       document.getElementById('txQty').value    = '';
+      
+      closeModal('txModal');
       loadTransactions();
       loadProductOptions(); // refresh stock counts
     } catch (err) {
@@ -231,8 +242,6 @@
   }
 
   async function generateInvoice(txId, productId, amount, qty) {
-    // Find product name from transactions list
-    const tx = transactions.find(t => t.id === txId);
     const productName = prompt('Enter product name for invoice:', '');
     if (!productName) return;
     const unitPrice = qty > 0 ? amount / qty : amount;
@@ -258,30 +267,18 @@
       }
       tbody.innerHTML = invoices.map(inv => `
         <tr>
-          <td>#${inv.id}</td>
+          <td style="color:var(--muted)">#${inv.id}</td>
           <td>TX-${inv.transaction_id}</td>
-          <td>${inv.product_name}</td>
+          <td><strong>${inv.product_name}</strong></td>
           <td>${inv.quantity}</td>
-          <td>${fmtMoney(inv.unit_price)}</td>
-          <td><strong>${fmtMoney(inv.total)}</strong></td>
-          <td>${fmtDate(inv.created_at)}</td>
+          <td style="color:var(--muted)">${fmtMoney(inv.unit_price)}</td>
+          <td style="font-weight:600">${fmtMoney(inv.total)}</td>
+          <td style="color:var(--muted)">${fmtDate(inv.created_at)}</td>
         </tr>
       `).join('');
     } catch (err) {
       document.getElementById('invTableBody').innerHTML =
-        `<tr><td colspan="7" class="empty" style="color:red">${err.message}</td></tr>`;
-    }
-  }
-
-  async function loadRecommendations() {
-    try {
-      const recs = await apiFetch(`${INVOICE_URL}/recommendations`, { headers: authHeaders() });
-      if (!recs) return;
-      const typeMap = { low_stock: 'alert-warning', high_expense: 'alert-danger', low_selling: 'alert-info', ok: 'alert-success' };
-      document.getElementById('recList').innerHTML =
-        recs.map(r => `<div class="alert ${typeMap[r.type] || 'alert-info'}">${r.message}</div>`).join('');
-    } catch (err) {
-      document.getElementById('recList').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+        `<tr><td colspan="7" class="empty" style="color:var(--danger)">${err.message}</td></tr>`;
     }
   }
 

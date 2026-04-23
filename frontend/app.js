@@ -71,3 +71,12 @@ function setActiveNav() {
     if (a.getAttribute('href') === page) a.classList.add('active');
   });
 }
+
+// --- Modal helpers ---
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}

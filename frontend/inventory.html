@@ -13,47 +13,20 @@
   <a class="brand" href="dashboard.html">📦 Finventory</a>
   <div class="nav-links">
     <a href="dashboard.html">Dashboard</a>
-    <a href="inventory.html">Inventory</a>
+    <a href="inventory.html" class="active">Inventory</a>
     <a href="finance.html">Finance</a>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </nav>
 
 <div class="page">
-  <h1 class="page-title">📦 Inventory</h1>
-
-  <!-- Add / Edit Form -->
-  <div class="form-panel">
-    <h3 id="formTitle">Add New Product</h3>
-    <input type="hidden" id="editId" />
-    <div class="form-row">
-      <div class="form-group">
-        <label for="pName">Product Name</label>
-        <input type="text" id="pName" placeholder="e.g. Laptop" />
-      </div>
-      <div class="form-group">
-        <label for="pPrice">Price ($)</label>
-        <input type="number" id="pPrice" placeholder="0.00" min="0" step="0.01" />
-      </div>
-      <div class="form-group">
-        <label for="pStock">Stock (units)</label>
-        <input type="number" id="pStock" placeholder="0" min="0" />
-      </div>
-      <div class="form-group" style="flex:2">
-        <label for="pDesc">Description (optional)</label>
-        <input type="text" id="pDesc" placeholder="Short description" />
-      </div>
-      <div class="form-group" style="min-width:auto">
-        <label>&nbsp;</label>
-        <button class="btn btn-primary" onclick="saveProduct()">Save</button>
-        <button class="btn btn-outline mt-1" onclick="resetForm()" style="margin-left:0.5rem">Cancel</button>
-      </div>
-    </div>
-    <div id="formError" class="error-msg" style="margin-top:0.5rem"></div>
+  <div class="section-header">
+    <h1 class="page-title" style="margin-bottom:0">📦 Inventory</h1>
+    <button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button>
   </div>
 
   <!-- Products Table -->
-  <div class="section-header">
+  <div class="section-header mt-3">
     <h2>All Products</h2>
     <span id="productCount" style="font-size:0.85rem;color:var(--muted)"></span>
   </div>
@@ -65,9 +38,45 @@
         </tr>
       </thead>
       <tbody id="productTableBody">
-        <tr><td colspan="7" class="empty">Loading...</td></tr>
+        <tr><td colspan="7" class="empty"><span class="spinner"></span></td></tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Modal: Add / Edit Form -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="formTitle">Add New Product</h3>
+      <button class="modal-close" onclick="closeProductModal()">&times;</button>
+    </div>
+    
+    <input type="hidden" id="editId" />
+    <div class="form-group">
+      <label for="pName">Product Name</label>
+      <input type="text" id="pName" placeholder="e.g. Laptop" />
+    </div>
+    <div style="display: flex; gap: 1rem;">
+      <div class="form-group" style="flex:1">
+        <label for="pPrice">Price ($)</label>
+        <input type="number" id="pPrice" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <div class="form-group" style="flex:1">
+        <label for="pStock">Stock (units)</label>
+        <input type="number" id="pStock" placeholder="0" min="0" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="pDesc">Description (optional)</label>
+      <textarea id="pDesc" placeholder="Short description" rows="3" style="resize:none"></textarea>
+    </div>
+    <div id="formError" class="error-msg" style="text-align:left; margin-bottom:1rem"></div>
+    
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem">
+      <button class="btn btn-outline" onclick="closeProductModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
   </div>
 </div>
 
@@ -76,6 +85,15 @@
   if (!checkAuth()) {}
   setActiveNav();
   let products = [];
+
+  function openProductModal() {
+    resetForm();
+    openModal('productModal');
+  }
+
+  function closeProductModal() {
+    closeModal('productModal');
+  }
 
   async function loadProducts() {
     try {
@@ -90,23 +108,23 @@
         <tr>
           <td>${p.id}</td>
           <td><strong>${p.name}</strong></td>
-          <td>${p.description || '—'}</td>
-          <td>${fmtMoney(p.price)}</td>
+          <td style="color:var(--muted)">${p.description || '—'}</td>
+          <td style="font-weight:500">${fmtMoney(p.price)}</td>
           <td>
             <span class="badge ${p.stock < 10 ? 'badge-red' : p.stock < 30 ? 'badge-yellow' : 'badge-green'}">
-              ${p.stock}
+              ${p.stock} in stock
             </span>
           </td>
-          <td>${fmtDate(p.created_at)}</td>
+          <td style="color:var(--muted)">${fmtDate(p.created_at)}</td>
           <td>
-            <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">✏️ Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})" style="margin-left:0.3rem">🗑️</button>
+            <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">Edit</button>
+            <button class="btn btn-outline btn-sm" onclick="deleteProduct(${p.id})" style="margin-left:0.3rem; border-color:transparent; color:var(--danger)">Delete</button>
           </td>
         </tr>
       `).join('');
     } catch (err) {
       document.getElementById('productTableBody').innerHTML =
-        `<tr><td colspan="7" class="empty" style="color:red">${err.message}</td></tr>`;
+        `<tr><td colspan="7" class="empty" style="color:var(--danger)">${err.message}</td></tr>`;
     }
   }
 
@@ -128,7 +146,7 @@
       } else {
         await apiFetch(`${INVENTORY_URL}/products`, { method: 'POST', headers: authHeaders(), body });
       }
-      resetForm();
+      closeProductModal();
       loadProducts();
     } catch (err) {
       errEl.textContent = err.message;
@@ -136,7 +154,7 @@
   }
 
   async function deleteProduct(id) {
-    if (!confirm('Delete this product?')) return;
+    if (!confirm('Are you sure you want to delete this product?')) return;
     try {
       await apiFetch(`${INVENTORY_URL}/products/${id}`, { method: 'DELETE', headers: authHeaders() });
       loadProducts();
@@ -152,7 +170,8 @@
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pDesc').value  = p.description || '';
     document.getElementById('formTitle').textContent = 'Edit Product';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('formError').textContent = '';
+    openModal('productModal');
   }
 
   function resetForm() {
