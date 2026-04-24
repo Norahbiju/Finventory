@@ -9,16 +9,19 @@ const ICONS = {
 function renderSidebar(activePage) {
   const role = getRole();
   const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: ICONS.dashboard, link: 'dashboard.html', roles: ['user', 'admin'] },
-    { id: 'inventory', name: 'Inventory', icon: ICONS.inventory, link: 'inventory.html', roles: ['user', 'admin'] },
-    { id: 'finance', name: 'Finance', icon: ICONS.finance, link: 'finance.html', roles: ['user', 'admin'] },
+    { id: 'dashboard', name: 'Dashboard', icon: ICONS.dashboard, link: 'dashboard.html', roles: ['user'] },
+    { id: 'inventory', name: 'Inventory', icon: ICONS.inventory, link: 'inventory.html', roles: ['user'] },
+    { id: 'finance', name: 'Finance', icon: ICONS.finance, link: 'finance.html', roles: ['user'] },
     { id: 'admin', name: 'User Management', icon: ICONS.admin, link: 'admin.html', roles: ['admin'] },
   ];
 
   const html = `
     <aside class="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-50 flex flex-col shadow-sm">
-        <div class="h-16 flex items-center px-6 border-b border-slate-100">
-            <span class="text-xl font-display font-bold text-slate-800 tracking-tight">Finventory<span class="text-primary-600">.</span></span>
+        <div class="h-16 flex items-center px-6 border-b border-slate-100 gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-blue to-brand-navy flex items-center justify-center shadow-sm">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="text-xl font-display font-bold text-brand-navy tracking-tight">NexaFlow<span class="text-brand-blue">.</span></span>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             ${menuItems.filter(item => item.roles.includes(role)).map(item => {
@@ -57,13 +60,16 @@ function renderTopbar(pageTitle) {
   const html = `
     <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 transition-all">
         <h1 class="text-xl font-display font-semibold text-slate-800 tracking-tight">${pageTitle}</h1>
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-3">
+        <div class="flex items-center gap-6">
+            <button class="text-slate-400 hover:text-brand-blue transition-colors relative">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-brand-orange ring-2 ring-white"></span>
+            </button>
+            <div class="flex items-center gap-3 pl-6 border-l border-slate-200">
                 <div class="text-right hidden sm:block">
                     <p class="text-sm font-semibold text-slate-700 leading-tight">${username}</p>
-                    <p class="text-xs text-slate-500 capitalize font-medium">${role}</p>
                 </div>
-                <div class="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-brand-end flex items-center justify-center text-white font-semibold shadow-sm ring-2 ring-white">
+                <div class="h-9 w-9 rounded-full bg-gradient-to-br from-brand-blue to-brand-navy flex items-center justify-center text-white font-semibold shadow-sm ring-2 ring-white">
                     ${initial}
                 </div>
             </div>

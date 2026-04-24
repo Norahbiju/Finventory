@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finventory — Dashboard</title>
+  <title>NexaFlow — Dashboard</title>
   
   <!-- Tailwind & Charts -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -23,6 +23,15 @@
 
   <main class="flex-1 p-6 sm:p-8 max-w-7xl mx-auto w-full">
     
+    <!-- Hero Banner -->
+    <div class="relative w-full h-48 rounded-2xl overflow-hidden mb-8 shadow-sm">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1470&auto=format&fit=crop" alt="Dashboard Banner" class="w-full h-full object-cover" />
+      <div class="absolute inset-0 bg-gradient-to-r from-brand-navy/90 to-brand-navy/30 flex flex-col justify-center px-8">
+        <h2 class="text-3xl font-display font-bold text-white mb-2">Welcome back to NexaFlow.</h2>
+        <p class="text-brand-light/80 max-w-lg">Track your inventory, monitor expenses, and get AI-powered insights to scale your business.</p>
+      </div>
+    </div>
+    
     <!-- Page Header & Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
       <div>
@@ -34,7 +43,7 @@
           <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           Add Product
         </a>
-        <a href="finance.html" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg shadow-soft shadow-primary-500/30 hover:bg-primary-700 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        <a href="finance.html" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-brand-blue border border-transparent rounded-lg shadow-soft shadow-brand-blue/30 hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue">
           <svg class="w-4 h-4 mr-2 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           New Transaction
         </a>
@@ -89,14 +98,14 @@
       <div class="space-y-6">
         
         <!-- Smart Assistant Card -->
-        <div class="bg-gradient-to-br from-indigo-50 to-white rounded-2xl shadow-card border border-indigo-100/50 p-6 overflow-hidden relative group">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-primary-100 rounded-full mix-blend-multiply filter blur-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+        <div class="bg-gradient-to-br from-brand-navy to-slate-900 rounded-2xl shadow-card p-6 overflow-hidden relative group">
+          <div class="absolute top-0 right-0 w-48 h-48 bg-brand-blue rounded-full mix-blend-screen filter blur-[60px] opacity-40 group-hover:opacity-60 transition-opacity"></div>
           
           <div class="flex items-center gap-3 mb-6 relative z-10">
-            <div class="w-10 h-10 rounded-xl bg-white shadow-sm border border-indigo-100 flex items-center justify-center">
-              <svg class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             </div>
-            <h3 class="text-base font-semibold text-slate-800">AI Assistant</h3>
+            <h3 class="text-base font-semibold text-white">Smart Insights</h3>
           </div>
 
           <div id="aiInsights" class="space-y-4 relative z-10">
@@ -111,12 +120,12 @@
 </div>
 
 <!-- Scripts -->
-<script src="app.js?v=2"></script>
-<script src="components/layout.js?v=2"></script>
-<script src="components/toast.js?v=2"></script>
-<script src="components/charts.js?v=2"></script>
+<script src="app.js?v=3"></script>
+<script src="components/layout.js?v=3"></script>
+<script src="components/toast.js?v=3"></script>
+<script src="components/charts.js?v=3"></script>
 <script>
-  if (!checkAuth()) {}
+  enforceRoleAccess(['user']);
   
   // Initialize layout components
   initLayout('dashboard', 'Dashboard Overview');
@@ -167,23 +176,23 @@
 
   function renderInsightCard(insight) {
     const typeStyles = {
-      low_stock: { bg: 'bg-amber-50 border-amber-100', icon: 'text-amber-500', action: 'Restock Now', url: 'inventory.html' },
-      high_expense: { bg: 'bg-red-50 border-red-100', icon: 'text-red-500', action: 'Review Expenses', url: 'finance.html' },
-      low_selling: { bg: 'bg-blue-50 border-blue-100', icon: 'text-blue-500', action: 'View Products', url: 'inventory.html' },
-      ok: { bg: 'bg-green-50 border-green-100', icon: 'text-green-500', action: 'View Details', url: 'finance.html' }
+      low_stock: { bg: 'bg-white/10 border-white/10', icon: 'text-brand-orange', text: 'text-white', action: 'Restock Now', url: 'inventory.html' },
+      high_expense: { bg: 'bg-white/10 border-white/10', icon: 'text-red-400', text: 'text-white', action: 'Review Expenses', url: 'finance.html' },
+      low_selling: { bg: 'bg-white/10 border-white/10', icon: 'text-brand-blue', text: 'text-white', action: 'View Products', url: 'inventory.html' },
+      ok: { bg: 'bg-white/10 border-white/10', icon: 'text-green-400', text: 'text-white', action: 'View Details', url: 'finance.html' }
     };
     
     const style = typeStyles[insight.type] || typeStyles.ok;
     
     return `
-      <div class="rounded-xl border ${style.bg} p-4 transition-all hover:shadow-sm">
+      <div class="rounded-xl border ${style.bg} backdrop-blur-sm p-4 transition-all hover:bg-white/20 cursor-pointer">
         <div class="flex items-start gap-3">
           <div class="mt-0.5 ${style.icon}">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
           </div>
           <div class="flex-1">
-            <p class="text-sm font-medium text-slate-800 leading-snug">${insight.message.replace(/^(⚠️|🔴|📉|✅)\s*/, '')}</p>
-            <a href="${style.url}" class="inline-block mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700">
+            <p class="text-sm font-medium ${style.text} leading-snug">${insight.message.replace(/^(⚠️|🔴|📉|✅)\s*/, '')}</p>
+            <a href="${style.url}" class="inline-block mt-3 text-sm font-semibold text-brand-blue hover:text-white transition-colors">
               ${style.action} &rarr;
             </a>
           </div>

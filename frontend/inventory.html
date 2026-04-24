@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finventory — Inventory</title>
+  <title>NexaFlow — Inventory</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="components/tailwind-config.js"></script>
@@ -125,11 +125,11 @@
   </div>
 </div>
 
-<script src="app.js?v=2"></script>
-<script src="components/layout.js?v=2"></script>
-<script src="components/toast.js?v=2"></script>
+<script src="app.js?v=3"></script>
+<script src="components/layout.js?v=3"></script>
+<script src="components/toast.js?v=3"></script>
 <script>
-  if (!checkAuth()) {}
+  enforceRoleAccess(['user']);
   initLayout('inventory', 'Inventory Management');
   let products = [];
 
