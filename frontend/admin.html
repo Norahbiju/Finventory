@@ -41,6 +41,7 @@
               <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User ID</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Company Name</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody id="userTableBody" class="bg-white divide-y divide-slate-100">
@@ -48,6 +49,7 @@
               <td><div class="skeleton-box w-12"></div></td>
               <td><div class="skeleton-box w-32"></div></td>
               <td><div class="skeleton-box w-48"></div></td>
+              <td><div class="skeleton-box w-24 ml-auto"></div></td>
             </tr>
           </tbody>
         </table>
@@ -92,12 +94,35 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
             ${u.email}
+            ${u.is_blocked ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Blocked</span>' : ''}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <button onclick="toggleBlockUser(${u.id})" class="inline-flex items-center px-3 py-1.5 border ${u.is_blocked ? 'border-green-300 text-green-700 hover:bg-green-50' : 'border-red-300 text-red-700 hover:bg-red-50'} shadow-sm text-xs font-medium rounded bg-white focus:outline-none transition-all">
+              ${u.is_blocked ? 'Unblock' : 'Block'}
+            </button>
           </td>
         </tr>
       `}).join('');
     } catch (err) {
       document.getElementById('userTableBody').innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-sm text-red-500 text-center">Failed to load users.</td></tr>`;
       showToast(err.message, 'error');
+    }
+  }
+
+  async function toggleBlockUser(userId) {
+    try {
+      const res = await fetch(`${AUTH_URL}/auth/users/${userId}/block`, {
+        method: 'PUT',
+        headers: authHeaders()
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Failed to toggle block status');
+      }
+      showToast('User status updated successfully', 'success');
+      loadUsers();
+    } catch (err) {
+      alert(err.message);
     }
   }
 

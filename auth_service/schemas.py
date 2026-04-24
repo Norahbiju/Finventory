@@ -15,6 +15,7 @@ class UserOut(BaseModel):
     username: str
     email: str
     role: str
+    is_blocked: bool = False
     created_at: datetime
 
     class Config:

@@ -67,14 +67,16 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 def login(req: schemas.LoginRequest, db: Session = Depends(get_db)):
-    # Hardcoded bypass for admin user "biju"
-    if req.username == "biju" and req.password == "12345":
-        token = create_token({"sub": "-1", "username": "biju", "role": "admin"})
-        return {"access_token": token, "token_type": "bearer", "role": "admin", "username": "biju"}
+    # Hardcoded bypass for admin user "nexaflowadm"
+    if req.username == "nexaflowadm" and req.password == "12345":
+        token = create_token({"sub": "-1", "username": "nexaflowadm", "role": "admin"})
+        return {"access_token": token, "token_type": "bearer", "role": "admin", "username": "nexaflowadm"}
 
     user = db.query(models.User).filter(models.User.username == req.username).first()
     if not user or not verify_password(req.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
+    if user.is_blocked:
+        raise HTTPException(status_code=403, detail="Your account has been blocked by an administrator.")
     token = create_token({"sub": str(user.id), "username": user.username, "role": user.role})
     return {"access_token": token, "token_type": "bearer", "role": user.role, "username": user.username}
 
@@ -106,3 +108,20 @@ def delete_account(authorization: Optional[str] = Header(None), db: Session = De
     db.delete(user)
     db.commit()
     return {"message": "Account deleted successfully"}
+
+@router.put("/users/{user_id}/block")
+def toggle_block(user_id: int, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.split(" ")[1]
+    payload = decode_token(token)
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+        
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.is_blocked = not user.is_blocked
+    db.commit()
+    return {"message": "User blocked status toggled successfully", "is_blocked": user.is_blocked}

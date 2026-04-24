@@ -4,6 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from .routes import router
 
+from sqlalchemy import text
+
+# Simple migration for is_blocked
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE"))
+        conn.commit()
+except Exception:
+    pass
+
 # Create tables on startup
 Base.metadata.create_all(bind=engine)
 
