@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,10 +19,9 @@ app.add_middleware(
 
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
-    genai.configure(api_key=api_key.strip())
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    client = genai.Client(api_key=api_key.strip())
 else:
-    model = None
+    client = None
 
 class QueryRequest(BaseModel):
     query: str
@@ -32,13 +31,16 @@ class QueryResponse(BaseModel):
 
 @app.post("/query", response_model=QueryResponse)
 def handle_query(request: QueryRequest):
-    if not model:
+    if not client:
         # Mock response if no key is provided
         return QueryResponse(response=f"[MOCK AI]: I received: '{request.query}'. Please add GEMINI_API_KEY to your .env file to enable the real AI!")
         
     try:
         prompt = f"You are NexaFlow AI Copilot, a helpful financial and inventory assistant. Provide concise, professional answers. User query: {request.query}"
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         return QueryResponse(response=response.text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
