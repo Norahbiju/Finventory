@@ -20,7 +20,7 @@
   <div class="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden">
     <!-- Unsplash Image Background with Overlay -->
     <div class="absolute inset-0 bg-brand-navy z-0">
-      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1470&auto=format&fit=crop" alt="Data Analytics" class="w-full h-full object-cover opacity-40 mix-blend-overlay" />
+      <img id="carouselBg" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1470&auto=format&fit=crop" alt="Data Analytics" class="w-full h-full object-cover opacity-40 mix-blend-overlay transition-opacity duration-500" />
       <div class="absolute inset-0 bg-gradient-to-t from-brand-navy via-brand-navy/60 to-transparent"></div>
     </div>
     
@@ -32,16 +32,14 @@
         <span class="text-2xl font-display font-bold text-white tracking-tight">NexaFlow<span class="text-brand-orange">.</span></span>
       </div>
       <div class="mt-20">
-        <h2 class="text-4xl font-display font-bold text-white mb-6 leading-tight">Intelligent financial operations.</h2>
-        <p class="text-slate-300 text-lg max-w-md font-light leading-relaxed">Streamline your workflows, monitor cash flow in real-time, and make data-driven decisions with confidence.</p>
+        <h2 id="carouselTitle" class="text-4xl font-display font-bold text-white mb-6 leading-tight transition-opacity duration-500">Intelligent financial operations.</h2>
+        <p id="carouselDesc" class="text-slate-300 text-lg max-w-md font-light leading-relaxed transition-opacity duration-500">Streamline your workflows, monitor cash flow in real-time, and make data-driven decisions with confidence.</p>
       </div>
     </div>
     
     <div class="relative z-10 mt-auto">
-      <div class="flex gap-2">
-        <div class="w-2 h-2 rounded-full bg-brand-orange"></div>
-        <div class="w-2 h-2 rounded-full bg-white/30"></div>
-        <div class="w-2 h-2 rounded-full bg-white/30"></div>
+      <div id="carouselDots" class="flex gap-2">
+        <!-- Dots injected by JS -->
       </div>
     </div>
   </div>
@@ -133,6 +131,65 @@
   if (getToken()) {
     window.location.href = getRole() === 'admin' ? 'admin.html' : 'dashboard.html';
   }
+
+  // Carousel Logic
+  const carouselData = [
+    {
+      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1470&auto=format&fit=crop',
+      title: 'Intelligent financial operations.',
+      desc: 'Streamline your workflows, monitor cash flow in real-time, and make data-driven decisions with confidence.'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1470&auto=format&fit=crop',
+      title: 'Advanced Inventory Management.',
+      desc: 'Keep track of your stock across multiple locations, predict demand, and never run out of your best-selling products.'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1470&auto=format&fit=crop',
+      title: 'Seamless Invoicing & Billing.',
+      desc: 'Generate professional PDF invoices instantly, track payments, and manage your receivables all in one place.'
+    }
+  ];
+
+  let currentSlide = 0;
+  function setSlide(index) {
+    currentSlide = index;
+    const data = carouselData[index];
+    
+    const titleEl = document.getElementById('carouselTitle');
+    const descEl = document.getElementById('carouselDesc');
+    const bgEl = document.getElementById('carouselBg');
+    
+    // Fade out
+    titleEl.classList.add('opacity-0');
+    descEl.classList.add('opacity-0');
+    bgEl.classList.replace('opacity-40', 'opacity-0');
+    
+    setTimeout(() => {
+      titleEl.textContent = data.title;
+      descEl.textContent = data.desc;
+      bgEl.src = data.image;
+      
+      // Fade in
+      titleEl.classList.remove('opacity-0');
+      descEl.classList.remove('opacity-0');
+      bgEl.classList.replace('opacity-0', 'opacity-40');
+    }, 500);
+
+    // Update dots
+    const dotsContainer = document.getElementById('carouselDots');
+    dotsContainer.innerHTML = carouselData.map((_, i) => `
+      <div onclick="setSlide(${i})" class="w-2 h-2 rounded-full cursor-pointer transition-colors ${i === index ? 'bg-brand-orange' : 'bg-white/30 hover:bg-white/50'}"></div>
+    `).join('');
+  }
+
+  setInterval(() => {
+    setSlide((currentSlide + 1) % carouselData.length);
+  }, 5000);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setSlide(0);
+  });
 
 
 
