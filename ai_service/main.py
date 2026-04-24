@@ -73,7 +73,7 @@ Answer in simple, clear English."""
         return QueryResponse(response="The AI model is currently waking up or took too long to respond. Please try asking again in a few seconds.")
     except Exception as e:
         print(f"Hugging Face API Error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error connecting to Hugging Face API.")
+        raise HTTPException(status_code=500, detail=f"Error connecting to Hugging Face API. Details: {str(e)}")
 
 @app.get("/")
 def root():
