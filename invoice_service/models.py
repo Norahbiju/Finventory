@@ -13,3 +13,4 @@ class Invoice(Base):
     unit_price = Column(Float, nullable=False)
     total = Column(Float, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(String(50), nullable=True)

@@ -30,27 +30,39 @@ def verify_token(authorization: Optional[str] = Header(None)) -> dict:
 
 @router.get("/transactions", response_model=List[schemas.TransactionOut])
 def get_transactions(db: Session = Depends(get_db), user: dict = Depends(verify_token)):
-    return db.query(models.Transaction).order_by(models.Transaction.created_at.desc()).all()
+    user_id = str(user.get("sub", "1"))
+    if user.get("role") == "admin":
+        return db.query(models.Transaction).order_by(models.Transaction.created_at.desc()).all()
+    return db.query(models.Transaction).filter(models.Transaction.user_id == user_id).order_by(models.Transaction.created_at.desc()).all()
 
 
 @router.post("/transactions", response_model=schemas.TransactionOut, status_code=201)
 def create_transaction(tx: schemas.TransactionCreate, db: Session = Depends(get_db), user: dict = Depends(verify_token)):
     # Reduce stock automatically on a sale
+    user_id = str(user.get("sub", "1"))
     if tx.category == "sale" and tx.product_id and tx.quantity:
         row = db.execute(
-            text("SELECT id, stock FROM products WHERE id = :id"),
-            {"id": tx.product_id}
+            text("SELECT id, stock FROM products WHERE id = :id AND user_id = :uid"),
+            {"id": tx.product_id, "uid": user_id}
         ).fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail="Product not found or not owned by user")
         if row.stock < tx.quantity:
             raise HTTPException(status_code=400, detail=f"Insufficient stock. Available: {row.stock}")
         db.execute(
-            text("UPDATE products SET stock = stock - :qty WHERE id = :id"),
-            {"qty": tx.quantity, "id": tx.product_id}
+            text("UPDATE products SET stock = stock - :qty WHERE id = :id AND user_id = :uid"),
+            {"qty": tx.quantity, "id": tx.product_id, "uid": user_id}
         )
 
-    new_tx = models.Transaction(**tx.model_dump())
+    new_tx = models.Transaction(
+        type=tx.type,
+        category=tx.category,
+        amount=tx.amount,
+        description=tx.description,
+        product_id=tx.product_id,
+        quantity=tx.quantity,
+        user_id=user_id
+    )
     db.add(new_tx)
     db.commit()
     db.refresh(new_tx)

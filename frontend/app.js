@@ -39,7 +39,9 @@ function logout() {
 async function apiFetch(url, options = {}) {
   let res;
   try {
-    res = await fetch(url, options);
+    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    const finalUrl = isGet ? `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}` : url;
+    res = await fetch(finalUrl, options);
   } catch (networkErr) {
     console.error('Network Error:', networkErr);
     throw new Error('Cannot reach the server. Please check your connection.');

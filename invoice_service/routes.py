@@ -31,7 +31,10 @@ def verify_token(authorization: Optional[str] = Header(None)) -> dict:
 
 @router.get("/invoices", response_model=List[schemas.InvoiceOut])
 def get_invoices(db: Session = Depends(get_db), user: dict = Depends(verify_token)):
-    return db.query(models.Invoice).order_by(models.Invoice.created_at.desc()).all()
+    user_id = str(user.get("sub", "1"))
+    if user.get("role") == "admin":
+        return db.query(models.Invoice).order_by(models.Invoice.created_at.desc()).all()
+    return db.query(models.Invoice).filter(models.Invoice.user_id == user_id).order_by(models.Invoice.created_at.desc()).all()
 
 
 @router.post("/invoices/generate", response_model=schemas.InvoiceOut, status_code=201)
@@ -42,6 +45,7 @@ def generate_invoice(data: schemas.InvoiceCreate, db: Session = Depends(get_db),
         quantity=data.quantity,
         unit_price=data.unit_price,
         total=round(data.quantity * data.unit_price, 2),
+        user_id=str(user.get("sub", "1"))
     )
     db.add(invoice)
     db.commit()
@@ -109,20 +113,33 @@ def get_recommendations(db: Session = Depends(get_db), user: dict = Depends(veri
 @router.get("/notifications")
 def get_notifications(db: Session = Depends(get_db), user: dict = Depends(verify_token)):
     notifications = []
+    user_id = str(user.get("sub", "1"))
     
-    recent_products = db.execute(text("SELECT id, name, created_at FROM products ORDER BY created_at DESC LIMIT 3")).fetchall()
+    recent_products = db.execute(
+        text("SELECT id, name, created_at FROM products WHERE user_id = :uid ORDER BY created_at DESC LIMIT 3"),
+        {"uid": user_id}
+    ).fetchall()
     for p in recent_products:
         notifications.append({"id": f"p_{p.id}", "type": "info", "message": f"New product added: {p.name}", "time": p.created_at})
         
-    low_stock = db.execute(text("SELECT id, name, stock FROM products WHERE stock < :threshold"), {"threshold": LOW_STOCK_THRESHOLD}).fetchall()
+    low_stock = db.execute(
+        text("SELECT id, name, stock FROM products WHERE stock < :threshold AND user_id = :uid"), 
+        {"threshold": LOW_STOCK_THRESHOLD, "uid": user_id}
+    ).fetchall()
     for p in low_stock:
         notifications.append({"id": f"s_{p.id}", "type": "warning", "message": f"Low stock alert: {p.name} ({p.stock} left)", "time": None})
         
-    recent_tx = db.execute(text("SELECT id, type, amount, created_at FROM transactions ORDER BY created_at DESC LIMIT 3")).fetchall()
+    recent_tx = db.execute(
+        text("SELECT id, type, amount, created_at FROM transactions WHERE user_id = :uid ORDER BY created_at DESC LIMIT 3"),
+        {"uid": user_id}
+    ).fetchall()
     for t in recent_tx:
         notifications.append({"id": f"t_{t.id}", "type": "success" if t.type == "income" else "info", "message": f"New {t.type} transaction: ${t.amount:.2f}", "time": t.created_at})
         
-    recent_inv = db.execute(text("SELECT id, product_name, total, created_at FROM invoices ORDER BY created_at DESC LIMIT 3")).fetchall()
+    recent_inv = db.execute(
+        text("SELECT id, product_name, total, created_at FROM invoices WHERE user_id = :uid ORDER BY created_at DESC LIMIT 3"),
+        {"uid": user_id}
+    ).fetchall()
     for i in recent_inv:
         notifications.append({"id": f"i_{i.id}", "type": "success", "message": f"Invoice #{i.id} generated for {i.product_name} (${i.total:.2f})", "time": i.created_at})
         
