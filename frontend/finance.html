@@ -262,7 +262,12 @@
         body: formData
       });
 
-      if (!response.ok) throw new Error("OCR Failed");
+      if (!response.ok) {
+        const errText = await response.text();
+        alert("OCR Backend Error: " + response.status + " " + errText);
+        throw new Error("OCR Failed: " + errText);
+      }
+      
       const data = await response.json();
       
       // Auto-fill fields
@@ -272,13 +277,19 @@
       
       if (data.amount > 0) {
         document.getElementById('txAmount').value = data.amount;
+      } else {
+        alert("OCR parsed successfully, but amount was 0. Raw text:\n" + (data.raw_text ? data.raw_text.substring(0, 500) : "No text found"));
       }
+      
       document.getElementById('txDesc').value = `Receipt from ${data.vendor || 'Unknown'} on ${data.date || 'unknown date'}`;
       
       showToast('Receipt scanned successfully!', 'success');
     } catch (err) {
       showToast('Failed to process receipt via OCR', 'error');
       console.error(err);
+      if (!err.message.includes("OCR Backend Error")) {
+        alert("Frontend Error during OCR: " + err.message);
+      }
     } finally {
       loader.classList.add('hidden');
       event.target.value = ''; // Reset input
