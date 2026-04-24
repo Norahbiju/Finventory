@@ -60,6 +60,8 @@
 <script src="app.js?v=4"></script>
 <script src="components/layout.js?v=4"></script>
 <script>
+  window.showToast = function(m, t) {};
+
   enforceRoleAccess(['admin']);
   initLayout('admin', 'Admin Console');
 

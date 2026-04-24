@@ -193,6 +193,8 @@
 <script src="app.js?v=4"></script>
 <script src="components/layout.js?v=4"></script>
 <script>
+  window.showToast = function(m, t) {};
+
   enforceRoleAccess(['user']);
   initLayout('finance', 'Finance & Accounting');
 
@@ -464,6 +466,8 @@
             Total Due: $${inv.total.toFixed(2)}
           </div>
           <script>
+  window.showToast = function(m, t) {};
+
             window.onload = function() { window.print(); }
           <\/script>
         </body>

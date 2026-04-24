@@ -120,6 +120,8 @@
 
 <script src="app.js?v=2"></script>
 <script>
+  window.showToast = function(m, t) {};
+
   if (getToken()) {
     window.location.href = getRole() === 'admin' ? 'admin.html' : 'dashboard.html';
   }
