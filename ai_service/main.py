@@ -19,7 +19,7 @@ app.add_middleware(
 
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
-    genai.configure(api_key=api_key)
+    genai.configure(api_key=api_key.strip())
     model = genai.GenerativeModel('gemini-1.5-flash-latest')
 else:
     model = None
