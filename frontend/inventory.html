@@ -127,9 +127,9 @@
   </div>
 </div>
 
-<script src="app.js?v=3"></script>
-<script src="components/layout.js?v=3"></script>
-<script src="components/toast.js?v=3"></script>
+<script src="app.js?v=4"></script>
+<script src="components/layout.js?v=4"></script>
+<script src="components/toast.js?v=4"></script>
 <script>
   enforceRoleAccess(['user']);
   initLayout('inventory', 'Inventory Management');
@@ -242,6 +242,7 @@
       }
       closeProductModal();
       loadProducts();
+      if (typeof loadNotifications === 'function') loadNotifications();
     } catch (err) {
       errEl.textContent = err.message;
       errEl.classList.remove('hidden');

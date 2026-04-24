@@ -190,9 +190,9 @@
   </div>
 </div>
 
-<script src="app.js?v=3"></script>
-<script src="components/layout.js?v=3"></script>
-<script src="components/toast.js?v=3"></script>
+<script src="app.js?v=4"></script>
+<script src="components/layout.js?v=4"></script>
+<script src="components/toast.js?v=4"></script>
 <script>
   enforceRoleAccess(['user']);
   initLayout('finance', 'Finance & Accounting');
@@ -332,6 +332,7 @@
       showToast('Transaction recorded successfully.', 'success');
       loadTransactions();
       loadProductOptions(); 
+      if (typeof loadNotifications === 'function') loadNotifications();
     } catch (err) {
       errEl.textContent = err.message;
       errEl.classList.remove('hidden');
@@ -353,6 +354,7 @@
       });
       showToast('Invoice generated successfully.', 'success');
       showTab('inv');
+      if (typeof loadNotifications === 'function') loadNotifications();
     } catch (err) { showToast(err.message, 'error'); }
   }
 
@@ -460,7 +462,7 @@
           </div>
           <script>
             window.onload = function() { window.print(); }
-          </script>
+          <\/script>
         </body>
       </html>
     `;
