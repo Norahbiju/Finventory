@@ -310,6 +310,7 @@
     try {
       const products = await apiFetch(`${INVENTORY_URL}/products`, { headers: authHeaders() });
       if (!products) return;
+      allProducts = products;
       const sel = document.getElementById('txProduct');
       sel.innerHTML = '<option value="">— Select product —</option>' +
         products.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (Stock: ${p.stock})</option>`).join('');
@@ -429,8 +430,8 @@
 
   async function generateInvoice(txId, productId, amount, qty, desc) {
     let productName = desc || 'General Service';
-    if (productId && globalProducts && globalProducts.length > 0) {
-      const prod = globalProducts.find(p => p.id === productId);
+    if (productId && allProducts && allProducts.length > 0) {
+      const prod = allProducts.find(p => p.id === productId);
       if (prod) productName = prod.name;
     }
 
