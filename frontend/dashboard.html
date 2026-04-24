@@ -338,6 +338,84 @@
     }
   }
 
+  async function handleAiChat(event) {
+    event.preventDefault();
+    const inputEl = document.getElementById('aiChatInput');
+    const query = inputEl.value.trim();
+    if (!query) return;
+
+    const chatWindow = document.getElementById('aiChatWindow');
+    
+    // Append user message
+    chatWindow.innerHTML += `
+      <div class="flex gap-3 flex-row-reverse">
+        <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        </div>
+        <div class="bg-brand-blue text-white rounded-2xl rounded-tr-sm p-3 max-w-[85%]">
+          <p class="text-xs leading-relaxed">${query.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+        </div>
+      </div>
+    `;
+    
+    inputEl.value = '';
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    // Show loading
+    const loadingId = 'loading-' + Date.now();
+    chatWindow.innerHTML += `
+      <div id="${loadingId}" class="flex gap-3">
+        <div class="w-8 h-8 rounded-full bg-brand-blue/20 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-brand-blue animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        </div>
+        <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl rounded-tl-sm p-3">
+          <p class="text-xs text-white/70 italic">Thinking...</p>
+        </div>
+      </div>
+    `;
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    try {
+      const data = await apiFetch(`${AI_URL}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query })
+      });
+      
+      const loadEl = document.getElementById(loadingId);
+      if (loadEl) loadEl.remove();
+      
+      if (data && data.response) {
+        // Append AI response
+        chatWindow.innerHTML += `
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-full bg-brand-blue/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl rounded-tl-sm p-3 max-w-[85%]">
+              <p class="text-xs text-white/90 leading-relaxed whitespace-pre-wrap">${data.response.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+            </div>
+          </div>
+        `;
+      }
+    } catch (err) {
+      const loadEl = document.getElementById(loadingId);
+      if (loadEl) loadEl.remove();
+      console.error(err);
+      chatWindow.innerHTML += `
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          <div class="bg-red-500/10 border border-red-500/20 rounded-2xl rounded-tl-sm p-3 max-w-[85%]">
+            <p class="text-xs text-red-400 leading-relaxed">Error connecting to AI service.</p>
+          </div>
+        </div>
+      `;
+    }
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
   loadDashboard();
 </script>
 </body>
