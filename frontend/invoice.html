@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexaFlow Invoice</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+
+    /* ── Print Styles ─────────────────────────────────────────────── */
+    @media print {
+      body { background: white !important; }
+      #print-controls { display: none !important; }
+      #invoice-wrapper {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print { display: none !important; }
+      @page { size: A4 portrait; margin: 12mm; }
+    }
+
+    /* ── Gradient text ────────────────────────────────────────────── */
+    .brand-gradient {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Header gradient bar ──────────────────────────────────────── */
+    .header-bar {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #06b6d4 100%);
+    }
+
+    /* ── Table row striping ───────────────────────────────────────── */
+    tbody tr:nth-child(even) { background-color: #f8f9ff; }
+
+    /* ── Status badge ─────────────────────────────────────────────── */
+    .badge-paid {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    /* ── Watermark ────────────────────────────────────────────────── */
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 8rem;
+      font-weight: 900;
+      color: rgba(99,102,241,0.04);
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-100 via-indigo-50 to-slate-100 py-10 px-4">
+
+  <!-- ── Floating Controls ──────────────────────────────────────── -->
+  <div id="print-controls" class="fixed top-6 right-6 z-50 flex flex-col gap-3 no-print">
+    <button onclick="window.print()"
+      class="group flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Download PDF
+    </button>
+    <button onclick="window.close()"
+      class="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-600 text-sm font-medium px-5 py-3 rounded-xl shadow-md border border-slate-200 hover:shadow-lg transition-all duration-200">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back
+    </button>
+  </div>
+
+  <!-- ── Invoice Wrapper ────────────────────────────────────────── -->
+  <div id="invoice-wrapper"
+    class="relative max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+
+    <!-- Watermark -->
+    <div class="watermark">NexaFlow</div>
+
+    <!-- ── Top Gradient Bar ───────────────────────────────────────── -->
+    <div class="header-bar px-10 py-8 relative overflow-hidden">
+      <!-- Background circles -->
+      <div class="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full"></div>
+      <div class="absolute -bottom-12 -left-4 w-32 h-32 bg-white/10 rounded-full"></div>
+
+      <div class="relative flex justify-between items-start">
+        <!-- Company Info -->
+        <div>
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h1 class="text-3xl font-black text-white tracking-tight">NexaFlow</h1>
+          </div>
+          <p class="text-white/70 text-sm">AI-Powered Business Platform</p>
+          <p class="text-white/60 text-xs mt-1">nexaflow.io &nbsp;·&nbsp; hello@nexaflow.io</p>
+        </div>
+
+        <!-- Invoice Title + Badge -->
+        <div class="text-right">
+          <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-4 py-1 mb-3">
+            <div class="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+            <span class="text-white text-xs font-semibold uppercase tracking-widest">Invoice</span>
+          </div>
+          <p class="text-white/80 text-sm font-medium" id="inv-number"></p>
+          <p class="text-white/60 text-xs mt-0.5" id="inv-date"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Body ───────────────────────────────────────────────────── -->
+    <div class="px-10 py-8 space-y-8">
+
+      <!-- Bill To -->
+      <div class="flex justify-between items-start">
+        <div class="bg-slate-50 rounded-2xl p-5 flex-1 mr-6 border border-slate-100">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Bill To</p>
+          <p class="text-lg font-bold text-slate-800" id="inv-company">—</p>
+          <p class="text-sm text-slate-500 mt-0.5" id="inv-email">—</p>
+        </div>
+        <div class="bg-indigo-50 rounded-2xl p-5 border border-indigo-100 min-w-[190px] text-right">
+          <p class="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-2">Payment Status</p>
+          <span class="badge-paid text-xs font-bold px-3 py-1.5 rounded-full">● PAID</span>
+          <p class="text-xs text-slate-400 mt-3 font-medium" id="inv-due">Due: Immediate</p>
+        </div>
+      </div>
+
+      <!-- ── Product Table ─────────────────────────────────────────── -->
+      <div class="rounded-2xl overflow-hidden border border-slate-200">
+        <table class="min-w-full">
+          <thead>
+            <tr class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
+              <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider">Sr.</th>
+              <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider">Product / Service</th>
+              <th class="px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-wider">Qty</th>
+              <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider">Unit Price</th>
+              <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider">Total</th>
+            </tr>
+          </thead>
+          <tbody id="inv-rows" class="divide-y divide-slate-100">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── Totals ────────────────────────────────────────────────── -->
+      <div class="flex justify-end">
+        <div class="w-72 space-y-2">
+          <div class="flex justify-between text-sm text-slate-600 py-2 border-b border-slate-100">
+            <span>Subtotal</span>
+            <span class="font-semibold" id="inv-subtotal">₹0.00</span>
+          </div>
+          <div class="flex justify-between items-center py-3 mt-1">
+            <span class="text-base font-bold text-slate-800">Total Amount</span>
+            <span class="text-xl font-black brand-gradient" id="inv-total">₹0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Amount in Words ───────────────────────────────────────── -->
+      <div class="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl px-6 py-4">
+        <p class="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-1">Amount in Words</p>
+        <p class="text-sm font-semibold text-slate-700 uppercase" id="inv-words">—</p>
+      </div>
+
+      <!-- ── Footer ────────────────────────────────────────────────── -->
+      <div class="border-t border-slate-100 pt-6 flex justify-between items-end">
+        <div class="max-w-xs">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Terms & Conditions</p>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Payment is due upon receipt of this invoice. Late payments may be subject to additional fees.
+            All sales are final. For queries, contact hello@nexaflow.io.
+          </p>
+          <p class="text-xs text-indigo-400 font-medium mt-3 italic">
+            ✦ This is a computer-generated invoice. No signature required.
+          </p>
+        </div>
+        <div class="text-right">
+          <div class="w-32 border-b-2 border-slate-300 pb-1 mb-1 ml-auto"></div>
+          <p class="text-xs text-slate-400">Authorised Signatory</p>
+          <p class="text-sm font-bold text-slate-600 mt-1">NexaFlow</p>
+        </div>
+      </div>
+
+      <!-- Bottom branding strip -->
+      <div class="header-bar rounded-xl px-6 py-3 flex justify-between items-center mt-2">
+        <p class="text-white/80 text-xs">Thank you for choosing NexaFlow!</p>
+        <p class="text-white/60 text-xs">nexaflow.io</p>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // ── Utility: Number to Words ────────────────────────────────────────
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+    'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function numToWords(n) {
+    n = Math.round(n);
+    if (n === 0) return 'Zero';
+    if (n < 0) return 'Minus ' + numToWords(-n);
+    let words = '';
+    if (n >= 10000000) { words += numToWords(Math.floor(n / 10000000)) + ' Crore '; n %= 10000000; }
+    if (n >= 100000)   { words += numToWords(Math.floor(n / 100000))   + ' Lakh ';  n %= 100000;   }
+    if (n >= 1000)     { words += numToWords(Math.floor(n / 1000))     + ' Thousand '; n %= 1000;   }
+    if (n >= 100)      { words += ones[Math.floor(n / 100)] + ' Hundred '; n %= 100; }
+    if (n >= 20)       { words += tens[Math.floor(n / 10)] + ' '; n %= 10; }
+    if (n > 0)         { words += ones[n] + ' '; }
+    return words.trim();
+  }
+
+  function inWords(amount) {
+    const rupees = Math.floor(amount);
+    const paise  = Math.round((amount - rupees) * 100);
+    let result = numToWords(rupees) + ' Rupees';
+    if (paise > 0) result += ' And ' + numToWords(paise) + ' Paise';
+    return result + ' Only';
+  }
+
+  // ── Format currency ─────────────────────────────────────────────────
+  function fmtINR(val) {
+    return '₹' + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ── Read URL params & populate invoice ─────────────────────────────
+  const params = new URLSearchParams(window.location.search);
+  const invId    = params.get('id')    || '';
+  const invName  = params.get('name')  || 'General Service';
+  const invQty   = parseFloat(params.get('qty')   || '1');
+  const invUnit  = parseFloat(params.get('unit')  || '0');
+  const invTotal = parseFloat(params.get('total') || '0');
+  const invDate  = params.get('date')  || new Date().toLocaleDateString('en-IN');
+
+  // Get logged-in user info from localStorage
+  const username = localStorage.getItem('nexaflow_username') || 'Your Company';
+  const email    = localStorage.getItem('nexaflow_email')    || 'contact@yourcompany.com';
+
+  // Populate header
+  document.getElementById('inv-number').textContent = `Invoice #NXF-${String(invId).padStart(4,'0')}`;
+  document.getElementById('inv-date').textContent   = `Date: ${invDate}`;
+
+  // Populate bill-to
+  document.getElementById('inv-company').textContent = username;
+  document.getElementById('inv-email').textContent   = email;
+  document.getElementById('inv-due').textContent     = `Due: ${invDate}`;
+
+  // Populate table row
+  document.getElementById('inv-rows').innerHTML = `
+    <tr>
+      <td class="px-6 py-4 text-sm text-slate-500 font-medium">1</td>
+      <td class="px-6 py-4">
+        <p class="text-sm font-semibold text-slate-800">${invName}</p>
+        <p class="text-xs text-slate-400 mt-0.5">Service / Product</p>
+      </td>
+      <td class="px-6 py-4 text-sm text-slate-600 text-center font-medium">${invQty}</td>
+      <td class="px-6 py-4 text-sm text-slate-600 text-right font-medium">${fmtINR(invUnit)}</td>
+      <td class="px-6 py-4 text-sm font-bold text-slate-800 text-right">${fmtINR(invTotal)}</td>
+    </tr>
+  `;
+
+  // Populate totals
+  document.getElementById('inv-subtotal').textContent = fmtINR(invTotal);
+  document.getElementById('inv-total').textContent    = fmtINR(invTotal);
+
+  // Populate words
+  document.getElementById('inv-words').textContent = inWords(invTotal);
+</script>
+</body>
+</html>

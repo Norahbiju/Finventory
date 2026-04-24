@@ -10,6 +10,7 @@ class TransactionCreate(BaseModel):
     description: Optional[str] = None
     product_id: Optional[int] = None
     quantity: Optional[int] = None
+    is_ocr: Optional[bool] = False
 
 
 class TransactionOut(BaseModel):
@@ -20,6 +21,7 @@ class TransactionOut(BaseModel):
     description: Optional[str]
     product_id: Optional[int]
     quantity: Optional[int]
+    is_ocr: bool
     created_at: datetime
 
     class Config:

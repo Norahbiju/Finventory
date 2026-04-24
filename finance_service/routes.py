@@ -61,7 +61,8 @@ def create_transaction(tx: schemas.TransactionCreate, db: Session = Depends(get_
         description=tx.description,
         product_id=tx.product_id,
         quantity=tx.quantity,
-        user_id=user_id
+        user_id=user_id,
+        is_ocr=tx.is_ocr or False
     )
     db.add(new_tx)
     db.commit()

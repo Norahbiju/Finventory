@@ -194,6 +194,7 @@
       </div>
       
       <div id="txError" class="text-sm text-red-500 font-medium hidden"></div>
+      <input type="hidden" id="txIsOcr" value="false" />
     </div>
     
       <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-2xl">
@@ -280,6 +281,9 @@
       } else {
         alert("OCR parsed successfully, but amount was 0. Raw text:\n" + (data.raw_text ? data.raw_text.substring(0, 500) : "No text found"));
       }
+      
+      // Mark this transaction as OCR-sourced
+      document.getElementById('txIsOcr').value = 'true';
       
       document.getElementById('txDesc').value = `Receipt from ${data.vendor || 'Unknown'} on ${data.date || 'unknown date'}`;
       
@@ -378,10 +382,12 @@
             ${fmtDate(t.created_at)}
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button onclick="generateInvoice(${t.id}, ${t.product_id || null}, ${t.amount}, ${t.quantity || 1}, '${(t.description || t.category).replace(/'/g, "\\'")}')" class="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-all opacity-0 group-hover:opacity-100">
-              <svg class="mr-1.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            ${(isInc || (!isInc && !t.is_ocr)) ? `
+            <button onclick="openInvoicePreview(${t.id}, ${t.product_id || null}, ${t.amount}, ${t.quantity || 1}, '${(t.description || t.category).replace(/'/g, "\\'")}')" class="inline-flex items-center px-3 py-1.5 border border-brand-blue/30 shadow-sm text-xs font-medium rounded text-brand-blue bg-brand-blue/5 hover:bg-brand-blue/10 focus:outline-none transition-all opacity-0 group-hover:opacity-100">
+              <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
               Invoice
             </button>
+            ` : `<span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">OCR Receipt</span>`}
           </td>
         </tr>
       `}).join('');
@@ -402,6 +408,9 @@
     const desc     = document.getElementById('txDesc').value.trim();
     const productId= parseInt(document.getElementById('txProduct').value) || null;
     const qty      = parseInt(document.getElementById('txQty').value) || null;
+    const isOcr    = document.getElementById('txIsOcr').value === 'true';
+    // Reset OCR flag so the next manual entry is clean
+    document.getElementById('txIsOcr').value = 'false';
 
     if (isNaN(amount) || amount <= 0) { 
       errEl.textContent = 'Please enter a valid amount.'; 
@@ -416,7 +425,7 @@
     btn.innerHTML = 'Saving...';
     btn.disabled = true;
 
-    const body = JSON.stringify({ type, category, amount, description: desc || null, product_id: productId, quantity: qty });
+    const body = JSON.stringify({ type, category, amount, description: desc || null, product_id: productId, quantity: qty, is_ocr: isOcr });
     try {
       await apiFetch(`${FINANCE_URL}/transactions`, { method: 'POST', headers: authHeaders(), body });
       
@@ -439,31 +448,43 @@
     }
   }
 
-  async function generateInvoice(txId, productId, amount, qty, desc) {
+  async function openInvoicePreview(txId, productId, amount, qty, desc) {
     let productName = desc || 'General Service';
     if (productId && allProducts && allProducts.length > 0) {
       const prod = allProducts.find(p => p.id === productId);
       if (prod) productName = prod.name;
     }
-
+    const unitPrice = amount / (qty || 1);
+    
     try {
+      // First save the invoice record to the DB so it appears in the Invoices tab
       const generatedInvoice = await apiFetch(`${INVOICE_URL}/invoices`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
           transaction_id: txId,
           product_name: productName,
-          quantity: qty,
-          unit_price: amount / qty
+          quantity: qty || 1,
+          unit_price: unitPrice
         }),
       });
-      showToast('Invoice generated successfully.', 'success');
-      showTab('inv');
       if (typeof loadNotifications === 'function') loadNotifications();
-      allInvoices.push(generatedInvoice);
-      downloadInvoicePdf(generatedInvoice.id);
+
+      // Then open the beautiful HTML preview page
+      const params = new URLSearchParams({
+        id: generatedInvoice.id,
+        name: productName,
+        qty: qty || 1,
+        unit: unitPrice.toFixed(2),
+        total: amount.toFixed(2),
+        date: new Date().toLocaleDateString('en-IN')
+      });
+      window.open(`invoice.html?${params.toString()}`, '_blank');
+      showToast('Invoice created! Opening preview...', 'success');
+      showTab('inv');
+      loadInvoices();
     } catch (err) {
-      alert("Error generating invoice: " + err.message);
+      alert('Error generating invoice: ' + err.message);
     }
   }
 

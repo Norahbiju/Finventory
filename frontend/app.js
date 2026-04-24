@@ -13,7 +13,8 @@ const OCR_URL       = '/api/ocr';
 // --- Token helpers ---
 function getToken()    { return localStorage.getItem('token'); }
 function getRole()     { return localStorage.getItem('role'); }
-function getUsername() { return localStorage.getItem('username'); }
+function getUsername() { return localStorage.getItem('nexaflow_username') || localStorage.getItem('username'); }
+function getEmail()    { return localStorage.getItem('nexaflow_email') || ''; }
 
 function authHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
