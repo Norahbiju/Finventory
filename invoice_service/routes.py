@@ -104,3 +104,27 @@ def get_recommendations(db: Session = Depends(get_db), user: dict = Depends(veri
         })
 
     return recommendations
+
+
+@router.get("/notifications")
+def get_notifications(db: Session = Depends(get_db), user: dict = Depends(verify_token)):
+    notifications = []
+    
+    recent_products = db.execute(text("SELECT id, name, created_at FROM products ORDER BY created_at DESC LIMIT 3")).fetchall()
+    for p in recent_products:
+        notifications.append({"id": f"p_{p.id}", "type": "info", "message": f"New product added: {p.name}", "time": p.created_at})
+        
+    low_stock = db.execute(text("SELECT id, name, stock FROM products WHERE stock < :threshold"), {"threshold": LOW_STOCK_THRESHOLD}).fetchall()
+    for p in low_stock:
+        notifications.append({"id": f"s_{p.id}", "type": "warning", "message": f"Low stock alert: {p.name} ({p.stock} left)", "time": None})
+        
+    recent_tx = db.execute(text("SELECT id, type, amount, created_at FROM transactions ORDER BY created_at DESC LIMIT 3")).fetchall()
+    for t in recent_tx:
+        notifications.append({"id": f"t_{t.id}", "type": "success" if t.type == "income" else "info", "message": f"New {t.type} transaction: ${t.amount:.2f}", "time": t.created_at})
+        
+    recent_inv = db.execute(text("SELECT id, product_name, total, created_at FROM invoices ORDER BY created_at DESC LIMIT 3")).fetchall()
+    for i in recent_inv:
+        notifications.append({"id": f"i_{i.id}", "type": "success", "message": f"Invoice #{i.id} generated for {i.product_name} (${i.total:.2f})", "time": i.created_at})
+        
+    notifications.sort(key=lambda x: str(x['time']) if x['time'] else "9999", reverse=True)
+    return notifications[:10]

@@ -61,10 +61,20 @@ function renderTopbar(pageTitle) {
     <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 transition-all">
         <h1 class="text-xl font-display font-semibold text-slate-800 tracking-tight">${pageTitle}</h1>
         <div class="flex items-center gap-6">
-            <button class="text-slate-400 hover:text-brand-blue transition-colors relative">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-brand-orange ring-2 ring-white"></span>
-            </button>
+            <div class="relative">
+              <button id="notification-btn" onclick="toggleNotifications()" class="text-slate-400 hover:text-brand-blue transition-colors relative p-1 focus:outline-none">
+                  <svg class="w-6 h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                  <span id="notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-brand-orange ring-2 ring-white" style="display: none;"></span>
+              </button>
+              <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 z-50 overflow-hidden transform origin-top-right transition-all">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                  <h3 class="text-sm font-semibold text-slate-800">Notifications</h3>
+                </div>
+                <div id="notifications-container" class="max-h-96 overflow-y-auto">
+                  <div class="p-4 text-center text-sm text-slate-500">Loading...</div>
+                </div>
+              </div>
+            </div>
             <div class="flex items-center gap-3 pl-6 border-l border-slate-200">
                 <div class="text-right hidden sm:block">
                     <p class="text-sm font-semibold text-slate-700 leading-tight">${username}</p>
@@ -84,4 +94,67 @@ function renderTopbar(pageTitle) {
 window.initLayout = function(pageId, pageTitle) {
     renderSidebar(pageId);
     renderTopbar(pageTitle);
+    if (checkAuth()) {
+      loadNotifications();
+    }
 };
+
+let _notifications = [];
+let _isNotificationOpen = false;
+
+async function loadNotifications() {
+  try {
+    _notifications = await apiFetch('/api/invoice/notifications', { headers: authHeaders() }) || [];
+    renderNotifications();
+  } catch (err) {
+    console.error('Failed to load notifications', err);
+  }
+}
+
+function renderNotifications() {
+  const container = document.getElementById('notifications-container');
+  if (!container) return;
+  const badge = document.getElementById('notification-badge');
+  if (badge) {
+    badge.style.display = _notifications.length > 0 ? 'block' : 'none';
+  }
+  if (_notifications.length === 0) {
+    container.innerHTML = '<div class="p-4 text-center text-sm text-slate-500">No new notifications.</div>';
+    return;
+  }
+  container.innerHTML = _notifications.map(n => {
+    let icon = '';
+    let iconBg = '';
+    if (n.type === 'success') { icon = '✓'; iconBg = 'bg-green-100 text-green-600'; }
+    else if (n.type === 'warning') { icon = '!'; iconBg = 'bg-orange-100 text-orange-600'; }
+    else { icon = 'i'; iconBg = 'bg-blue-100 text-blue-600'; }
+    
+    return `
+      <div class="px-4 py-3 hover:bg-slate-50 border-b border-slate-100 flex gap-3 items-start transition-colors cursor-pointer">
+        <div class="w-8 h-8 rounded-full ${iconBg} flex items-center justify-center font-bold text-xs shrink-0">${icon}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-slate-800 font-medium">${n.message}</p>
+          ${n.time ? `<p class="text-xs text-slate-500 mt-0.5">${fmtDate(n.time)}</p>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.toggleNotifications = function() {
+  _isNotificationOpen = !_isNotificationOpen;
+  const dropdown = document.getElementById('notifications-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden', !_isNotificationOpen);
+  }
+};
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('notifications-dropdown');
+  const btn = document.getElementById('notification-btn');
+  if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+    _isNotificationOpen = false;
+    dropdown.classList.add('hidden');
+  }
+});
