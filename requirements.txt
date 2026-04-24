@@ -10,3 +10,4 @@ python-dotenv
 reportlab
 pytesseract
 Pillow
+google-generativeai

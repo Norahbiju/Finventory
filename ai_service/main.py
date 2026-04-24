@@ -2,8 +2,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
-from dotenv import load_dotenv
+import google.generativeai as genai
 
 load_dotenv()
 
@@ -17,8 +16,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key) if api_key else None
+api_key = os.getenv("GEMINI_API_KEY")
+if api_key:
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-pro')
+else:
+    model = None
 
 class QueryRequest(BaseModel):
     query: str
@@ -28,20 +31,14 @@ class QueryResponse(BaseModel):
 
 @app.post("/query", response_model=QueryResponse)
 def handle_query(request: QueryRequest):
-    if not client:
+    if not model:
         # Mock response if no key is provided
-        return QueryResponse(response=f"[MOCK AI]: I processed your query '{request.query}'. Please add OPENAI_API_KEY in the .env file to enable the real LLM!")
+        return QueryResponse(response=f"[MOCK AI]: I received: '{request.query}'. Please add GEMINI_API_KEY to your .env file to enable the real AI!")
         
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are NexaFlow AI Copilot, a helpful financial and inventory assistant. Provide concise, professional answers."},
-                {"role": "user", "content": request.query}
-            ],
-            max_tokens=100
-        )
-        return QueryResponse(response=response.choices[0].message.content)
+        prompt = f"You are NexaFlow AI Copilot, a helpful financial and inventory assistant. Provide concise, professional answers. User query: {request.query}"
+        response = model.generate_content(prompt)
+        return QueryResponse(response=response.text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

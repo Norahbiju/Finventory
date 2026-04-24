@@ -95,7 +95,7 @@ services:
     container_name: finventory_ai
     restart: unless-stopped
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
 
   # ── OCR Service (internal, proxied via nginx /api/ocr/) ─
   ocr_service:
