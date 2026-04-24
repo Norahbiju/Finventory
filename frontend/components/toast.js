@@ -4,7 +4,7 @@ function getToastContainer() {
     if (!container) {
         container = document.createElement('div');
         container.id = 'toast-container';
-        container.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none w-[calc(100%-2rem)] max-w-sm';
+        container.style.cssText = 'position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; width: calc(100% - 2rem); max-width: 24rem;';
         document.body.appendChild(container);
     }
     return container;
