@@ -91,3 +91,9 @@ function openModal(id) {
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
 }
+
+// Dummy showToast to prevent ReferenceErrors
+window.showToast = function(message, type) {
+  if (type === 'error') console.error("Toast Error:", message);
+  else console.log("Toast:", message);
+};

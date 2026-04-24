@@ -88,3 +88,21 @@ def list_users(authorization: Optional[str] = Header(None), db: Session = Depend
     if payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return db.query(models.User).all()
+
+@router.delete("/delete")
+def delete_account(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.split(" ")[1]
+    payload = decode_token(token)
+    user_id = payload.get("sub")
+    if not user_id or user_id == "-1":
+        raise HTTPException(status_code=400, detail="Cannot delete admin account")
+        
+    user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    db.delete(user)
+    db.commit()
+    return {"message": "Account deleted successfully"}

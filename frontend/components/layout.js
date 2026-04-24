@@ -41,8 +41,14 @@ function renderSidebar(activePage) {
             }).join('')}
         </nav>
         <div class="p-4 border-t border-slate-100">
-            <button onclick="logout()" class="flex w-full items-center px-3 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all duration-200 group">
-                ${ICONS.logout.replace('class="', 'class="text-slate-400 group-hover:text-red-500 ')}
+            ${role === 'user' ? `
+            <button onclick="deleteAccount()" class="flex w-full items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200 group mb-2">
+                <svg class="w-5 h-5 mr-3 flex-shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Delete Company
+            </button>
+            ` : ''}
+            <button onclick="logout()" class="flex w-full items-center px-3 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
+                ${ICONS.logout.replace('class="', 'class="text-slate-400 group-hover:text-slate-500 ')}
                 Sign out
             </button>
         </div>
@@ -59,7 +65,10 @@ function renderTopbar(pageTitle) {
 
   const html = `
     <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40 transition-all">
-        <h1 class="text-xl font-display font-semibold text-slate-800 tracking-tight">${pageTitle}</h1>
+        <h1 class="text-xl font-display font-semibold text-slate-800 tracking-tight">
+          ${pageTitle}
+          ${role === 'admin' ? '<span class="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-orange text-white">Admin Mode</span>' : ''}
+        </h1>
         <div class="flex items-center gap-6">
             <div class="relative">
               <button id="notification-btn" onclick="toggleNotifications()" class="text-slate-400 hover:text-brand-blue transition-colors relative p-1 focus:outline-none">
@@ -158,3 +167,14 @@ document.addEventListener('click', (e) => {
     dropdown.classList.add('hidden');
   }
 });
+
+window.deleteAccount = async function() {
+  if (confirm("Are you sure you want to delete your company account? This action cannot be undone.")) {
+    try {
+      await apiFetch('/api/auth/auth/delete', { method: 'DELETE', headers: authHeaders() });
+      logout();
+    } catch (err) {
+      alert("Could not delete account: " + err.message);
+    }
+  }
+};
