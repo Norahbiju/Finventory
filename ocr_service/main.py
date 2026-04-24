@@ -17,40 +17,88 @@ app.add_middleware(
 
 @app.post("/ocr/upload")
 async def process_receipt(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Only images are supported for now")
-        
+    # Accept all file types - let PIL decide if it's a valid image
     try:
         contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
         
+        try:
+            image = Image.open(io.BytesIO(contents))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Could not open file as an image. Please upload a PNG, JPG, or JPEG.")
+
+        # Convert to RGB if needed (handles PNG with transparency etc.)
+        if image.mode not in ("RGB", "L"):
+            image = image.convert("RGB")
+
         # Extract text using Tesseract
         text = pytesseract.image_to_string(image)
-        
-        # Simple Regex extraction (Very basic approximations)
-        # 1. Amount: Look for $ or decimals
-        amounts = re.findall(r'\b\d+\.\d{2}\b', text)
+
+        # ── Amount Extraction ────────────────────────────────────────────
         amount = 0.0
-        if amounts:
-            # Assume the largest number is the total
-            amount = max([float(a) for a in amounts])
-            
-        # 2. Date: Look for YYYY-MM-DD or MM/DD/YYYY
-        date_match = re.search(r'(\d{2,4}[-/]\d{2}[-/]\d{2,4})', text)
+
+        # 1. Try to find INR amount: "INR 575.00" or "Rs 575.00" or "₹575.00"
+        inr_match = re.search(
+            r'(?:INR|Rs\.?|₹)\s*([\d,]+\.?\d{0,2})',
+            text, re.IGNORECASE
+        )
+        if inr_match:
+            amount = float(inr_match.group(1).replace(',', ''))
+        else:
+            # 2. Fallback: find any decimal number
+            amounts = re.findall(r'\b(\d{1,6}(?:,\d{3})*(?:\.\d{1,2})?)\b', text)
+            if amounts:
+                parsed = []
+                for a in amounts:
+                    try:
+                        parsed.append(float(a.replace(',', '')))
+                    except ValueError:
+                        pass
+                if parsed:
+                    # Filter out obvious reference/ID numbers (very large)
+                    reasonable = [a for a in parsed if a < 1_000_000]
+                    amount = max(reasonable) if reasonable else 0.0
+
+        # ── Date Extraction ──────────────────────────────────────────────
+        date_match = re.search(
+            r'\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}[/-]\d{2}[/-]\d{2})\b',
+            text
+        )
         date = date_match.group(1) if date_match else "2026-04-20"
-        
-        # 3. Vendor: Usually the first line of the receipt
+
+        # ── Vendor Extraction ────────────────────────────────────────────
         lines = [line.strip() for line in text.split('\n') if len(line.strip()) > 3]
-        vendor = lines[0] if lines else "Unknown Vendor"
-        
+
+        # Look for organization name keywords at the bottom (common in Indian receipts)
+        vendor = "Unknown Vendor"
+        org_keywords = ['university', 'college', 'institute', 'bank', 'store',
+                        'pvt', 'ltd', 'llp', 'hospital', 'school', 'traders',
+                        'enterprises', 'solutions', 'services']
+
+        # Search from bottom-up for a line with an org keyword
+        for line in reversed(lines):
+            if any(kw in line.lower() for kw in org_keywords):
+                vendor = line
+                break
+        else:
+            # Fallback to first non-generic header line
+            skip = ['receipt', 'invoice', 'bill', 'payment']
+            for line in lines:
+                if not any(s in line.lower() for s in skip) and len(line) > 5:
+                    vendor = line
+                    break
+
         return {
             "amount": amount,
             "date": date,
             "vendor": vendor,
             "raw_text": text
         }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OCR failed: {str(e)}")
+
 
 @app.get("/")
 def root():

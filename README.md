@@ -11,9 +11,8 @@ Finventory/
 ├── auth_service/        → Port 8001  (Login, Signup, JWT, User list)
 ├── inventory_service/   → Port 8002  (Product CRUD, stock levels)
 ├── finance_service/     → Port 8003  (Income & expense transactions)
-├── invoice_service/     → Port 8004  (Invoice PDF generation + GST)
+├── invoice_service/     → Port 8004  (Invoice PDF + GST + Stock Forecasting)
 ├── ai_service/          → Port 8005  (AI Financial Copilot via OpenAI)
-├── analytics_service/   → Port 8006  (Predictive stock forecasting)
 ├── ocr_service/         → Port 8007  (Smart receipt OCR scanning)
 ├── frontend/            → Nginx-served HTML pages + reverse proxy
 ├── .env                 → Shared environment variables
@@ -65,9 +64,8 @@ Visit `http://localhost` in your browser.
 | Auth | 8001 | `/api/auth/` |
 | Inventory | 8002 | `/api/inventory/` |
 | Finance | 8003 | `/api/finance/` |
-| Invoice | 8004 | `/api/invoice/` |
+| Invoice + Analytics | 8004 | `/api/invoice/` |
 | AI Copilot | 8005 | `/api/ai/` |
-| Analytics | 8006 | `/api/analytics/` |
 | OCR | 8007 | `/api/ocr/` |
 
 All services expose Swagger UI at `/docs` on their respective port.

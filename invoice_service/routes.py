@@ -12,7 +12,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 from . import models, schemas
-from .database import get_db
+from .database import get_db, engine
 
 load_dotenv()
 
@@ -31,6 +31,40 @@ def verify_token(authorization: Optional[str] = Header(None)) -> dict:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+# ── Predictive Analytics (merged from analytics_service) ──────────────
+@router.get("/forecast/{product_id}")
+def get_forecast(product_id: int, user: dict = Depends(verify_token)):
+    try:
+        with engine.connect() as conn:
+            prod = conn.execute(
+                text("SELECT name, stock FROM products WHERE id = :pid"),
+                {"pid": product_id}
+            ).fetchone()
+            if not prod:
+                raise HTTPException(status_code=404, detail="Product not found")
+
+            tx_count = conn.execute(
+                text("SELECT COALESCE(SUM(quantity), 0) as total FROM transactions WHERE product_id = :pid AND category = 'sale'"),
+                {"pid": product_id}
+            ).fetchone()[0]
+
+            daily_rate = max(tx_count / 30.0, 0.5)
+            days_left = int(prod.stock / daily_rate)
+
+            return {
+                "product": prod.name,
+                "current_stock": prod.stock,
+                "daily_sales_rate": round(daily_rate, 2),
+                "days_left": days_left,
+                "message": f"Stock will run out in {days_left} days"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.get("/invoices", response_model=List[schemas.InvoiceOut])

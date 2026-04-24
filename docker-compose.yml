@@ -97,19 +97,6 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
-  # ── Analytics Service (internal, proxied via nginx /api/analytics/) ─
-  analytics_service:
-    build:
-      context: .
-      dockerfile: analytics_service/Dockerfile
-    container_name: finventory_analytics
-    restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/finventory_db
-    depends_on:
-      db:
-        condition: service_healthy
-
   # ── OCR Service (internal, proxied via nginx /api/ocr/) ─
   ocr_service:
     build:
@@ -133,7 +120,6 @@ services:
       - finance_service
       - invoice_service
       - ai_service
-      - analytics_service
       - ocr_service
 
 volumes:

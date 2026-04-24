@@ -7,7 +7,7 @@ const INVENTORY_URL = '/api/inventory';
 const FINANCE_URL   = '/api/finance';
 const INVOICE_URL   = '/api/invoice';
 const AI_URL        = '/api/ai';
-const ANALYTICS_URL = '/api/analytics';
+const ANALYTICS_URL = '/api/invoice'; // merged into invoice_service
 const OCR_URL       = '/api/ocr';
 
 // --- Token helpers ---
