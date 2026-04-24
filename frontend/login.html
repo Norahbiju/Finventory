@@ -67,9 +67,12 @@
       
       <!-- Login Section -->
       <div id="loginSection" class="space-y-5">
-        <div class="flex p-1 bg-slate-100 rounded-lg mb-2">
-          <button id="tabCompany" onclick="switchLoginTab('company')" class="flex-1 py-2 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm transition-all focus:outline-none">Company Sign In</button>
-          <button id="tabAdmin" onclick="switchLoginTab('admin')" class="flex-1 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all focus:outline-none">Admin Sign In</button>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5" for="loginUserType">Select User Type:</label>
+          <select id="loginUserType" onchange="switchLoginTab(this.value)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-700">
+            <option value="company">Company</option>
+            <option value="admin">Admin</option>
+          </select>
         </div>
         
         <div>
@@ -134,20 +137,14 @@
 
 
   function switchLoginTab(type) {
-    const tabCompany = document.getElementById('tabCompany');
-    const tabAdmin = document.getElementById('tabAdmin');
     const userLabel = document.getElementById('loginUsernameLabel');
     const signupLink = document.getElementById('signupLinkContainer');
     
-    if (type === 'company') {
-      tabCompany.className = "flex-1 py-2 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm transition-all focus:outline-none";
-      tabAdmin.className = "flex-1 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all focus:outline-none";
+    if (type === 'company' || type === 'user') {
       userLabel.textContent = "Company Name";
       document.getElementById('loginUsername').placeholder = "Enter your company name";
       signupLink.classList.remove('hidden');
     } else {
-      tabAdmin.className = "flex-1 py-2 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm transition-all focus:outline-none";
-      tabCompany.className = "flex-1 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all focus:outline-none";
       userLabel.textContent = "Admin Username";
       document.getElementById('loginUsername').placeholder = "Enter admin username";
       signupLink.classList.add('hidden');
@@ -204,9 +201,9 @@
         body: JSON.stringify({ username, password }),
       });
       if (!data) return;
-      sessionStorage.setItem('token', data.access_token);
-      sessionStorage.setItem('role', data.role);
-      sessionStorage.setItem('username', data.username);
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('username', data.username);
       
       showToast('Login successful!', 'success');
       setTimeout(() => {
