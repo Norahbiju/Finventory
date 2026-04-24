@@ -122,7 +122,7 @@ def generate_pdf(invoice_id: int, db: Session = Depends(get_db), user: dict = De
     
     c.setFont("Helvetica", 10)
     c.drawString(width - 200, height - 50, f"Date: {invoice.created_at.strftime('%Y-%m-%d')}")
-    c.drawString(width - 200, height - 65, f"Company: {invoice.user_id}")
+    c.drawString(width - 200, height - 65, f"Company: {user.get('username', 'Unknown Company')}")
     
     # Table Header
     y = height - 150
