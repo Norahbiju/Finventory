@@ -10,4 +10,4 @@ python-dotenv
 reportlab
 pytesseract
 Pillow
-google-genai
+requests
