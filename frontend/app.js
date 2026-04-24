@@ -75,7 +75,7 @@ function fmtDate(iso) {
 }
 
 function fmtMoney(n) {
-  return '$' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '₹' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 // --- Set active nav link ---

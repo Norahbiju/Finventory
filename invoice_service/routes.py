@@ -138,24 +138,24 @@ def generate_pdf(invoice_id: int, db: Session = Depends(get_db), user: dict = De
     c.setFont("Helvetica", 12)
     c.drawString(50, y, invoice.product_name)
     c.drawString(300, y, str(invoice.quantity))
-    c.drawString(400, y, f"${invoice.unit_price:.2f}")
-    c.drawString(500, y, f"${subtotal:.2f}")
+    c.drawString(400, y, f"INR {invoice.unit_price:.2f}")
+    c.drawString(500, y, f"INR {subtotal:.2f}")
     c.line(50, y - 5, width - 50, y - 5)
     
     # Totals
     y -= 40
     c.setFont("Helvetica", 12)
     c.drawString(400, y, "Subtotal:")
-    c.drawString(500, y, f"${subtotal:.2f}")
+    c.drawString(500, y, f"INR {subtotal:.2f}")
     
     y -= 20
     c.drawString(400, y, "GST (18%):")
-    c.drawString(500, y, f"${gst:.2f}")
+    c.drawString(500, y, f"INR {gst:.2f}")
     
     y -= 20
     c.setFont("Helvetica-Bold", 12)
     c.drawString(400, y, "Grand Total:")
-    c.drawString(500, y, f"${grand_total:.2f}")
+    c.drawString(500, y, f"INR {grand_total:.2f}")
     
     c.showPage()
     c.save()
@@ -249,14 +249,14 @@ def get_notifications(db: Session = Depends(get_db), user: dict = Depends(verify
         {"uid": user_id}
     ).fetchall()
     for t in recent_tx:
-        notifications.append({"id": f"t_{t.id}", "type": "success" if t.type == "income" else "info", "message": f"New {t.type} transaction: ${t.amount:.2f}", "time": t.created_at})
+        notifications.append({"id": f"t_{t.id}", "type": "success" if t.type == "income" else "info", "message": f"New {t.type} transaction: ₹{t.amount:.2f}", "time": t.created_at})
         
     recent_inv = db.execute(
         text("SELECT id, product_name, total, created_at FROM invoices WHERE user_id = :uid ORDER BY created_at DESC LIMIT 3"),
         {"uid": user_id}
     ).fetchall()
     for i in recent_inv:
-        notifications.append({"id": f"i_{i.id}", "type": "success", "message": f"Invoice #{i.id} generated for {i.product_name} (${i.total:.2f})", "time": i.created_at})
+        notifications.append({"id": f"i_{i.id}", "type": "success", "message": f"Invoice #{i.id} generated for {i.product_name} (₹{i.total:.2f})", "time": i.created_at})
         
     notifications.sort(key=lambda x: str(x['time']) if x['time'] else "9999", reverse=True)
     return notifications[:10]
