@@ -8,9 +8,9 @@ const FINANCE_URL   = '/api/finance';
 const INVOICE_URL   = '/api/invoice';
 
 // --- Token helpers ---
-function getToken()    { return localStorage.getItem('token'); }
-function getRole()     { return localStorage.getItem('role'); }
-function getUsername() { return localStorage.getItem('username'); }
+function getToken()    { return sessionStorage.getItem('token'); }
+function getRole()     { return sessionStorage.getItem('role'); }
+function getUsername() { return sessionStorage.getItem('username'); }
 
 function authHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
@@ -31,7 +31,7 @@ function enforceRoleAccess(allowedRoles) {
 }
 
 function logout() {
-  localStorage.clear();
+  sessionStorage.clear();
   window.location.href = 'login.html';
 }
 
