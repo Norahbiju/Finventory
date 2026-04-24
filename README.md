@@ -1,6 +1,6 @@
-# Finventory
+# NexaFlow — AI-Powered Inventory & Finance Platform
 
-A simple full-stack inventory & finance management app built with **FastAPI + PostgreSQL + HTML/CSS/JS**.
+A full-stack SaaS platform built with **FastAPI microservices + PostgreSQL + HTML/CSS/JS + Docker**.
 
 ---
 
@@ -11,8 +11,11 @@ Finventory/
 ├── auth_service/        → Port 8001  (Login, Signup, JWT, User list)
 ├── inventory_service/   → Port 8002  (Product CRUD, stock levels)
 ├── finance_service/     → Port 8003  (Income & expense transactions)
-├── invoice_service/     → Port 8004  (Invoice generation, recommendations)
-├── frontend/            → Static HTML pages (open directly in browser)
+├── invoice_service/     → Port 8004  (Invoice PDF generation + GST)
+├── ai_service/          → Port 8005  (AI Financial Copilot via OpenAI)
+├── analytics_service/   → Port 8006  (Predictive stock forecasting)
+├── ocr_service/         → Port 8007  (Smart receipt OCR scanning)
+├── frontend/            → Nginx-served HTML pages + reverse proxy
 ├── .env                 → Shared environment variables
 └── requirements.txt     → Python dependencies
 ```
@@ -21,106 +24,80 @@ Finventory/
 
 ## Prerequisites
 
-- Python 3.10+
-- PostgreSQL running locally
-- `pip` package manager
+- Docker & Docker Compose
 
 ---
 
-## Setup
+## Setup (Docker — Recommended)
 
-### 1. Create the database
+### 1. Configure environment
 
-Open `psql` or pgAdmin and run:
-
-```sql
-CREATE DATABASE finventory_db;
-```
-
-### 2. Configure environment
-
-Edit `.env` with your PostgreSQL credentials:
+Edit `.env`:
 
 ```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/finventory_db
+DATABASE_URL=postgresql://postgres:postgres@db:5432/finventory_db
 SECRET_KEY=finventory_super_secret_key_2024
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
+OPENAI_API_KEY=sk-your-openai-api-key-here
 ```
 
-### 3. Install dependencies
+> If `OPENAI_API_KEY` is left blank, the AI Copilot returns a mock response — all other features work normally.
+
+### 2. Start the stack
 
 ```bash
-cd Finventory
-pip install -r requirements.txt
+docker-compose up -d --build
 ```
 
-### 4. Start all 4 services (open 4 terminal tabs)
+### 3. Open the app
 
-```bash
-# Terminal 1 — Auth Service
-uvicorn auth_service.main:app --port 8001 --reload
+Visit `http://localhost` in your browser.
 
-# Terminal 2 — Inventory Service
-uvicorn inventory_service.main:app --port 8002 --reload
-
-# Terminal 3 — Finance Service
-uvicorn finance_service.main:app --port 8003 --reload
-
-# Terminal 4 — Invoice Service
-uvicorn invoice_service.main:app --port 8004 --reload
-```
-
-> **Note:** Start the Inventory Service first so the `products` table is created before Finance and Invoice services use it.
-
----
-
-## Using the App
-
-Open `frontend/login.html` directly in your browser.
-
-| Page | File | URL |
-|---|---|---|
-| Login / Signup | `login.html` | open in browser |
-| User Dashboard | `dashboard.html` | auto-redirect after login |
-| Admin Dashboard | `admin.html` | auto-redirect if role=admin |
-| Inventory | `inventory.html` | nav link |
-| Finance | `finance.html` | nav link |
+> **Default login:** username `biju` / password `12345`
 
 ---
 
 ## API Reference
 
-| Service | Base URL | Docs |
+| Service | Internal Port | Nginx Route |
 |---|---|---|
-| Auth | `http://localhost:8001` | `/docs` |
-| Inventory | `http://localhost:8002` | `/docs` |
-| Finance | `http://localhost:8003` | `/docs` |
-| Invoice | `http://localhost:8004` | `/docs` |
+| Auth | 8001 | `/api/auth/` |
+| Inventory | 8002 | `/api/inventory/` |
+| Finance | 8003 | `/api/finance/` |
+| Invoice | 8004 | `/api/invoice/` |
+| AI Copilot | 8005 | `/api/ai/` |
+| Analytics | 8006 | `/api/analytics/` |
+| OCR | 8007 | `/api/ocr/` |
 
-All services expose Swagger UI at `/docs`.
-
----
-
-## Database Schema
-
-| Table | Service | Purpose |
-|---|---|---|
-| `users` | Auth | Login accounts |
-| `products` | Inventory | Product catalog + stock |
-| `transactions` | Finance | Income & expense records |
-| `invoices` | Invoice | Generated invoice records |
+All services expose Swagger UI at `/docs` on their respective port.
 
 ---
 
 ## Features
 
 - ✅ JWT login & signup (admin / user roles)
-- ✅ Admin sees only the user list
-- ✅ Add, edit, delete products
-- ✅ Stock color badges (red < 10, yellow < 30, green ≥ 30)
+- ✅ Add, edit, delete products with stock tracking
 - ✅ Record income/expense transactions
 - ✅ Auto stock reduction on sale
-- ✅ Generate invoices for sale transactions
-- ✅ Recommendations: low stock, high expenses, zero-sales products
-- ✅ Dashboard summary cards
+- ✅ **Backend PDF Invoice generation** with 18% GST (ReportLab)
+- ✅ **AI Financial Copilot** — ask questions in natural language
+- ✅ **Predictive Analytics** — per-product stock forecasting dashboard
+- ✅ **Smart OCR** — upload receipt photos to auto-fill transactions
+- ✅ Recommendations: low stock, high expenses, zero-sales alerts
+- ✅ Dashboard summary cards + Cash Flow chart
+
+---
+
+## Deployment (AWS EC2)
+
+```bash
+# Pull latest code
+git pull
+
+# Rebuild without losing database data
+docker-compose down
+docker-compose up -d --build
+```
+
+> ⚠️ Never run `docker-compose down -v` — this deletes your PostgreSQL data volume.

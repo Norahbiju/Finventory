@@ -212,18 +212,27 @@
   let allTransactions = [];
   let allInvoices = [];
 
+  window.showToast = function(msg, type) {
+    const toast = document.createElement('div');
+    const color = type === 'error' ? 'bg-red-600' : 'bg-green-600';
+    toast.className = `fixed top-5 right-5 z-[9999] px-4 py-2 rounded-lg text-white text-sm font-medium shadow-lg ${color}`;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  };
+
   enforceRoleAccess(['admin', 'user']);
   initLayout('finance', 'Finance & Invoices');
 
   function openModal(id) {
     document.getElementById(id).classList.add('active');
     document.body.style.overflow = 'hidden';
-    
     if (id === 'txModal') {
       document.getElementById('txType').value = 'income';
       document.getElementById('txCategory').value = 'sale';
       document.getElementById('txAmount').value = '';
       document.getElementById('txProduct').value = '';
+      document.getElementById('txQty').value = '';
       document.getElementById('txDesc').value = '';
       onTypeChange();
     }
@@ -313,7 +322,8 @@
 
   async function loadTransactions() {
     try {
-      transactions = await apiFetch(`${FINANCE_URL}/transactions`, { headers: authHeaders() }) || [];
+      allTransactions = await apiFetch(`${FINANCE_URL}/transactions`, { headers: authHeaders() }) || [];
+      const transactions = allTransactions;
       const income   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
       const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
       const net = income - expenses;
@@ -371,7 +381,7 @@
 
   async function saveTransaction() {
     const errEl = document.getElementById('txError');
-    const btn = document.getElementById('saveTxBtn');
+    const btn = document.getElementById('saveBtn');
     errEl.classList.add('hidden');
     
     const type     = document.getElementById('txType').value;
