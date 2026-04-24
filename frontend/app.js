@@ -6,6 +6,9 @@ const AUTH_URL      = '/api/auth';
 const INVENTORY_URL = '/api/inventory';
 const FINANCE_URL   = '/api/finance';
 const INVOICE_URL   = '/api/invoice';
+const AI_URL        = '/api/ai';
+const ANALYTICS_URL = '/api/analytics';
+const OCR_URL       = '/api/ocr';
 
 // --- Token helpers ---
 function getToken()    { return localStorage.getItem('token'); }

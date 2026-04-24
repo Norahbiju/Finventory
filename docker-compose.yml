@@ -87,6 +87,37 @@ services:
       inventory_service:
         condition: service_started
 
+  # ── AI Service (internal, proxied via nginx /api/ai/) ─
+  ai_service:
+    build:
+      context: .
+      dockerfile: ai_service/Dockerfile
+    container_name: finventory_ai
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+  # ── Analytics Service (internal, proxied via nginx /api/analytics/) ─
+  analytics_service:
+    build:
+      context: .
+      dockerfile: analytics_service/Dockerfile
+    container_name: finventory_analytics
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/finventory_db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── OCR Service (internal, proxied via nginx /api/ocr/) ─
+  ocr_service:
+    build:
+      context: .
+      dockerfile: ocr_service/Dockerfile
+    container_name: finventory_ocr
+    restart: unless-stopped
+
   # ── Frontend (nginx on port 80 — the ONLY public-facing port) ─
   frontend:
     build:
@@ -101,6 +132,9 @@ services:
       - inventory_service
       - finance_service
       - invoice_service
+      - ai_service
+      - analytics_service
+      - ocr_service
 
 volumes:
   postgres_data:

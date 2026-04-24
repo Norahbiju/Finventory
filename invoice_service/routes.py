@@ -6,6 +6,10 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from jose import jwt, JWTError
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from fastapi.responses import StreamingResponse
+import io
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 from . import models, schemas
 from .database import get_db
@@ -37,7 +41,7 @@ def get_invoices(db: Session = Depends(get_db), user: dict = Depends(verify_toke
     return db.query(models.Invoice).filter(models.Invoice.user_id == user_id).order_by(models.Invoice.created_at.desc()).all()
 
 
-@router.post("/invoices/generate", response_model=schemas.InvoiceOut, status_code=201)
+@router.post("/invoices", response_model=schemas.InvoiceOut, status_code=201)
 def generate_invoice(data: schemas.InvoiceCreate, db: Session = Depends(get_db), user: dict = Depends(verify_token)):
     invoice = models.Invoice(
         transaction_id=data.transaction_id,
@@ -51,6 +55,83 @@ def generate_invoice(data: schemas.InvoiceCreate, db: Session = Depends(get_db),
     db.commit()
     db.refresh(invoice)
     return invoice
+
+
+@router.get("/invoices/{invoice_id}/pdf")
+def generate_pdf(invoice_id: int, db: Session = Depends(get_db), user: dict = Depends(verify_token)):
+    user_id = str(user.get("sub", "1"))
+    
+    # Allow admin to view any invoice
+    if user.get("role") == "admin":
+        invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id).first()
+    else:
+        invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id, models.Invoice.user_id == user_id).first()
+        
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+        
+    # Calculate GST
+    subtotal = invoice.total
+    gst = round(subtotal * 0.18, 2)
+    grand_total = subtotal + gst
+
+    # Create PDF in memory
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    
+    c.setFont("Helvetica-Bold", 24)
+    c.drawString(50, height - 50, "NexaFlow")
+    
+    c.setFont("Helvetica", 14)
+    c.drawString(50, height - 80, f"Invoice #{invoice.id}")
+    
+    c.setFont("Helvetica", 10)
+    c.drawString(width - 200, height - 50, f"Date: {invoice.created_at.strftime('%Y-%m-%d')}")
+    c.drawString(width - 200, height - 65, f"Company: {invoice.user_id}")
+    
+    # Table Header
+    y = height - 150
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Product / Service")
+    c.drawString(300, y, "Qty")
+    c.drawString(400, y, "Unit Price")
+    c.drawString(500, y, "Total")
+    c.line(50, y - 5, width - 50, y - 5)
+    
+    # Table Row
+    y -= 25
+    c.setFont("Helvetica", 12)
+    c.drawString(50, y, invoice.product_name)
+    c.drawString(300, y, str(invoice.quantity))
+    c.drawString(400, y, f"${invoice.unit_price:.2f}")
+    c.drawString(500, y, f"${subtotal:.2f}")
+    c.line(50, y - 5, width - 50, y - 5)
+    
+    # Totals
+    y -= 40
+    c.setFont("Helvetica", 12)
+    c.drawString(400, y, "Subtotal:")
+    c.drawString(500, y, f"${subtotal:.2f}")
+    
+    y -= 20
+    c.drawString(400, y, "GST (18%):")
+    c.drawString(500, y, f"${gst:.2f}")
+    
+    y -= 20
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(400, y, "Grand Total:")
+    c.drawString(500, y, f"${grand_total:.2f}")
+    
+    c.showPage()
+    c.save()
+    
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": f"attachment; filename=invoice_{invoice.id}.pdf"}
+    )
 
 
 @router.get("/recommendations")
