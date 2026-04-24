@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -80,7 +80,10 @@ def login(req: schemas.LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/users", response_model=List[schemas.UserOut])
-def list_users(token: str = Query(...), db: Session = Depends(get_db)):
+def list_users(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.split(" ")[1]
     payload = decode_token(token)
     if payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
