@@ -19,7 +19,10 @@ app.add_middleware(
 
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
-    client = genai.Client(api_key=api_key.strip())
+    client = genai.Client(
+        api_key=api_key.strip(),
+        http_options={'api_version': 'v1'}
+    )
 else:
     client = None
 
@@ -37,10 +40,20 @@ def handle_query(request: QueryRequest):
         
     try:
         prompt = f"You are NexaFlow AI Copilot, a helpful financial and inventory assistant. Provide concise, professional answers. User query: {request.query}"
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt
-        )
+        
+        try:
+            # First try the absolute latest stable model
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt
+            )
+        except Exception:
+            # Fallback to the standard 1.5-flash if 2.0 isn't available for their key
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=prompt
+            )
+            
         return QueryResponse(response=response.text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
