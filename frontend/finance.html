@@ -180,10 +180,8 @@
     </div>
     
     <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-      <button onclick="closeModal('txModal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
-        Cancel
-      </button>
-      <button id="addBtn" onclick="addTransaction()" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all flex items-center">
+      <button onclick="closeModal('txModal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-all">Cancel</button>
+      <button id="saveTxBtn" onclick="saveTransaction()" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg shadow-sm hover:bg-primary-700 transition-all flex items-center">
         Record Transaction
       </button>
     </div>
@@ -281,11 +279,10 @@
             ${fmtDate(t.created_at)}
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            ${t.category === 'sale' && t.product_id ?
-              `<button onclick="generateInvoice(${t.id}, ${t.product_id}, ${t.amount}, ${t.quantity || 1})" class="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-all opacity-0 group-hover:opacity-100">
-                <svg class="mr-1.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Invoice
-              </button>` : '—'}
+            <button onclick="generateInvoice(${t.id}, ${t.product_id || null}, ${t.amount}, ${t.quantity || 1}, '${(t.description || t.category).replace(/'/g, "\\'")}')" class="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-xs font-medium rounded text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-all opacity-0 group-hover:opacity-100">
+              <svg class="mr-1.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Invoice
+            </button>
           </td>
         </tr>
       `}).join('');
@@ -295,9 +292,9 @@
     }
   }
 
-  async function addTransaction() {
+  async function saveTransaction() {
     const errEl = document.getElementById('txError');
-    const btn = document.getElementById('addBtn');
+    const btn = document.getElementById('saveTxBtn');
     errEl.classList.add('hidden');
     
     const type     = document.getElementById('txType').value;
@@ -343,23 +340,32 @@
     }
   }
 
-  async function generateInvoice(txId, productId, amount, qty) {
-    const productName = prompt('Enter product name for invoice:', '');
-    if (!productName) return;
-    const unitPrice = qty > 0 ? amount / qty : amount;
+  async function generateInvoice(txId, productId, amount, qty, desc) {
+    let productName = desc || 'General Service';
+    if (productId && globalProducts && globalProducts.length > 0) {
+      const prod = globalProducts.find(p => p.id === productId);
+      if (prod) productName = prod.name;
+    }
+
     try {
-      const generatedInvoice = await apiFetch(`${INVOICE_URL}/invoices/generate`, {
+      const generatedInvoice = await apiFetch(`${INVOICE_URL}/invoices`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ transaction_id: txId, product_name: productName, quantity: qty, unit_price: unitPrice }),
+        body: JSON.stringify({
+          transaction_id: txId,
+          product_name: productName,
+          quantity: qty,
+          unit_price: amount / qty
+        }),
       });
       showToast('Invoice generated successfully.', 'success');
       showTab('inv');
       if (typeof loadNotifications === 'function') loadNotifications();
-      // Automatically add to invoices list locally for the download to find it, or just download it directly
       allInvoices.push(generatedInvoice);
       downloadInvoicePdf(generatedInvoice.id);
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) {
+      alert("Error generating invoice: " + err.message);
+    }
   }
 
   async function loadInvoices() {
