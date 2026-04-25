@@ -329,17 +329,17 @@
       
       const data = await response.json();
 
-      // Populate OCR modal result fields
-      if (data.amount > 0) {
-        document.getElementById('ocrAmount').value = data.amount;
-      } else {
-        alert("OCR parsed successfully, but amount was 0. Raw text:\n" + (data.raw_text ? data.raw_text.substring(0, 500) : "No text found"));
-      }
+      // Always show the result section so the user can review/edit
+      document.getElementById('ocrAmount').value = data.amount > 0 ? data.amount : '';
       document.getElementById('ocrDesc').value = `Receipt from ${data.vendor || 'Unknown'} on ${data.date || 'unknown date'}`;
       document.getElementById('ocrResult').classList.remove('hidden');
       document.getElementById('saveOcrBtn').classList.remove('hidden');
 
-      showToast('Receipt scanned! Please review and save.', 'success');
+      if (data.amount > 0) {
+        showToast(`Receipt scanned! Amount: ₹${data.amount}`, 'success');
+      } else {
+        showToast('Scanned — please enter the amount manually.', 'error');
+      }
     } catch (err) {
       showToast('Failed to process receipt via OCR', 'error');
       console.error(err);
