@@ -30,8 +30,9 @@ async def process_receipt(file: UploadFile = File(...)):
         if image.mode not in ("RGB", "L"):
             image = image.convert("RGB")
 
-        # Extract text using Tesseract
-        text = pytesseract.image_to_string(image)
+        # Extract text using Tesseract with PSM 4 (Assume a single column of text of variable sizes)
+        # This prevents Tesseract from stopping or skipping sections due to dashed lines on receipts
+        text = pytesseract.image_to_string(image, config='--psm 4')
 
         # ── Amount Extraction ────────────────────────────────────────────
         amount = 0.0
