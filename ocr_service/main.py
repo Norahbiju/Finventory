@@ -30,19 +30,22 @@ async def process_receipt(file: UploadFile = File(...)):
         if image.mode not in ("RGB", "L"):
             image = image.convert("RGB")
 
-        # Extract text using Tesseract with PSM 4 (Assume a single column of text of variable sizes)
-        # This prevents Tesseract from stopping or skipping sections due to dashed lines on receipts
-        text = pytesseract.image_to_string(image, config='--psm 4')
+        # Extract text using Tesseract with PSM 11 (Sparse text) to find EVERYTHING
+        # PSM 11 ignores layout entirely and just pulls all readable words/numbers.
+        text = pytesseract.image_to_string(image, config='--psm 11')
+        print("====== OCR RAW TEXT ======")
+        print(text)
+        print("==========================")
 
         # ── Amount Extraction ────────────────────────────────────────────
         amount = 0.0
         lines_list = text.splitlines()
 
-        # Strict: requires .XX decimals  — used only in fallback to exclude PIN/HSN codes
-        MONEY_RE = re.compile(r'(?<!\d)(\d{1,7}(?:,\d{3})*\.\d{1,2})(?!\d)')
+        # Strict: requires .XX or ,XX or OO decimals to exclude PIN/HSN codes
+        MONEY_RE = re.compile(r'(?<!\d)(\d{1,7}(?:[,\s]\d{3})*(?:[.,]\d{2}|[.,][oO]{2}))(?!\d)', re.IGNORECASE)
 
-        # Flexible: any reasonable number (with or without decimal) — used near keywords
-        ANY_NUM  = re.compile(r'(?<!\d)(\d{1,7}(?:[,]\d{3})*(?:[.,]\d{1,2})?)(?!\d)')
+        # Flexible: any reasonable number (with or without decimal, handling O for 0)
+        ANY_NUM  = re.compile(r'(?<!\d)(\d{1,7}(?:[,]\d{3})*(?:[.,]\d{1,2}|[.,][oO]{1,2})?)(?!\d)', re.IGNORECASE)
 
         HIGH_PRIORITY = re.compile(
             r'\b(grand\s+total|total\s+amount|net\s+payable|amount\s+payable'
@@ -52,32 +55,36 @@ async def process_receipt(file: UploadFile = File(...)):
         LOW_PRIORITY = re.compile(r'\btotal\b', re.IGNORECASE)
 
         def parse_num(s):
-            """Normalise comma/dot separators and return float, or None."""
-            s = s.strip().replace(',', '')
+            """Normalise separators and OCR letter O/o to 0."""
+            s = s.strip().replace(',', '.').replace(' ', '')
+            s = s.replace('O', '0').replace('o', '0')
+            # If multiple dots exist (e.g. 1.200.50), keep only the last one
+            if s.count('.') > 1:
+                parts = s.rsplit('.', 1)
+                s = parts[0].replace('.', '') + '.' + parts[1]
             try:
                 return float(s)
             except ValueError:
                 return None
 
-        # ── Strategy 1: High-priority keyword → current + next 3 lines ────
+        # ── Strategy 1: High-priority keyword → current + next 5 lines ────
         high_vals = []
         for i, line in enumerate(lines_list):
             if HIGH_PRIORITY.search(line):
-                chunk = " ".join(lines_list[i:i+4])
+                chunk = " ".join(lines_list[i:i+6])
                 for m in ANY_NUM.findall(chunk):
                     v = parse_num(m)
-                    # Ignore single digits (tax %) and ensure realistic totals
                     if v and v >= 10 and v < 10_000_000:
                         high_vals.append(v)
         if high_vals:
             amount = max(high_vals)
 
-        # ── Strategy 2: Low-priority keyword → current + next 3 lines ─────
+        # ── Strategy 2: Low-priority keyword → current + next 5 lines ─────
         if amount == 0:
             low_vals = []
             for i, line in enumerate(lines_list):
                 if LOW_PRIORITY.search(line):
-                    chunk = " ".join(lines_list[i:i+4])
+                    chunk = " ".join(lines_list[i:i+6])
                     for m in ANY_NUM.findall(chunk):
                         v = parse_num(m)
                         if v and v >= 10 and v < 10_000_000:
@@ -88,7 +95,7 @@ async def process_receipt(file: UploadFile = File(...)):
         # ── Strategy 3: Last ₹ / Rs / INR amount anywhere in text ────────
         if amount == 0:
             inr_amounts = re.findall(
-                r'(?:₹|Rs\.?|INR)\s*(\d{1,7}(?:[,\s]\d{3})*(?:[.,]\d{1,2})?)',
+                r'(?:₹|Rs\.?|INR)\s*(\d{1,7}(?:[,\s]\d{3})*(?:[.,]\d{1,2}|[.,][oO]{1,2})?)',
                 text, re.IGNORECASE
             )
             for raw in reversed(inr_amounts):
