@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 load_dotenv()
 
@@ -20,11 +20,9 @@ app.add_middleware(
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_key_here":
-    genai.configure(api_key=GEMINI_API_KEY)
-    # Using the standard gemini-pro model for text instructions
-    model = genai.GenerativeModel('gemini-pro')
+    client = genai.Client(api_key=GEMINI_API_KEY)
 else:
-    model = None
+    client = None
 
 class QueryRequest(BaseModel):
     query: str
@@ -34,7 +32,7 @@ class QueryResponse(BaseModel):
 
 @app.post("/query", response_model=QueryResponse)
 def handle_query(request: QueryRequest):
-    if not model:
+    if not client:
         return QueryResponse(response=f"[MOCK AI]: I received: '{request.query}'. Please add a valid GEMINI_API_KEY to your .env file to enable the Google Gemini AI!")
         
     prompt = f"""You are an AI assistant for a business dashboard.
@@ -53,7 +51,10 @@ User question:
 Answer in simple, clear English and be extremely concise."""
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-1.5-pro',
+            contents=prompt,
+        )
         return QueryResponse(response=response.text.strip())
     except Exception as e:
         print(f"Gemini API Error: {str(e)}")

@@ -11,4 +11,4 @@ reportlab
 pytesseract
 Pillow
 requests
-google-generativeai
+google-genai
