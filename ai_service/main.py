@@ -25,14 +25,16 @@ if GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_key_here":
         # Automatically pick first available model
         _models = list(client.models.list())
         
-        # Pick first non-flash model if available
+        # We MUST use a 'flash' model because 'pro' models have a strict 2 RPM free-tier limit
+        # which causes constant 429 ResourceExhausted errors for the user.
         SELECTED_MODEL = None
         for m in _models:
-            if "flash" not in m.name.lower():
+            # Prefer flash models for high rate limits
+            if "flash" in m.name.lower():
                 SELECTED_MODEL = m.name
                 break
         
-        # fallback if only flash exists
+        # fallback if no flash exists
         if not SELECTED_MODEL and _models:
             SELECTED_MODEL = _models[0].name
             
