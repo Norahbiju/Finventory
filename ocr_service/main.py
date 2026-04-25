@@ -58,27 +58,28 @@ async def process_receipt(file: UploadFile = File(...)):
             except ValueError:
                 return None
 
-        # ── Strategy 1: High-priority keyword → same line + next line ────
+        # ── Strategy 1: High-priority keyword → current + next 3 lines ────
         high_vals = []
         for i, line in enumerate(lines_list):
             if HIGH_PRIORITY.search(line):
-                search_text = line + ' ' + (lines_list[i + 1] if i + 1 < len(lines_list) else '')
-                for m in ANY_NUM.findall(search_text):
+                chunk = " ".join(lines_list[i:i+4])
+                for m in ANY_NUM.findall(chunk):
                     v = parse_num(m)
-                    if v and 1 <= v < 10_000_000:
+                    # Ignore single digits (tax %) and ensure realistic totals
+                    if v and v >= 10 and v < 10_000_000:
                         high_vals.append(v)
         if high_vals:
             amount = max(high_vals)
 
-        # ── Strategy 2: Low-priority keyword → same line + next line ─────
+        # ── Strategy 2: Low-priority keyword → current + next 3 lines ─────
         if amount == 0:
             low_vals = []
             for i, line in enumerate(lines_list):
                 if LOW_PRIORITY.search(line):
-                    search_text = line + ' ' + (lines_list[i + 1] if i + 1 < len(lines_list) else '')
-                    for m in ANY_NUM.findall(search_text):
+                    chunk = " ".join(lines_list[i:i+4])
+                    for m in ANY_NUM.findall(chunk):
                         v = parse_num(m)
-                        if v and 1 <= v < 10_000_000:
+                        if v and v >= 10 and v < 10_000_000:
                             low_vals.append(v)
             if low_vals:
                 amount = max(low_vals)
