@@ -35,54 +35,64 @@ async def process_receipt(file: UploadFile = File(...)):
 
         # ── Amount Extraction ────────────────────────────────────────────
         amount = 0.0
+        lines_list = text.splitlines()
 
-        # Strategy: scan line-by-line and take the LAST match for total keywords.
-        # Receipts show running subtotals before the final grand total at the bottom.
-        TOTAL_KEYWORDS = re.compile(
-            r'\b(grand\s+total|total\s+amount|amount\s+payable|net\s+payable|'
-            r'net\s+total|balance\s+due|amount\s+due|total)\b',
+        # MONEY pattern: numbers that MUST have 2 decimal places (e.g. 944.00, 1,200.50)
+        # This intentionally excludes integers like 560001, 9608, 4820 (PIN / HSN codes)
+        MONEY_RE = re.compile(r'\b(\d{1,7}(?:,\d{3})*\.\d{2})\b')
+
+        # Total keyword priorities (more specific = higher priority)
+        HIGH_PRIORITY = re.compile(
+            r'\b(grand\s+total|total\s+amount|net\s+payable|amount\s+payable'
+            r'|balance\s+due|amount\s+due|net\s+total)\b',
             re.IGNORECASE
         )
-        CURRENCY_PATTERN = re.compile(
-            r'(?:rs\.?|inr|₹|\$)?\s*([\d,]+\.?\d{0,2})',
-            re.IGNORECASE
-        )
+        LOW_PRIORITY = re.compile(r'\btotal\b', re.IGNORECASE)
 
-        best_amount = 0.0
-        for line in text.splitlines():
-            if TOTAL_KEYWORDS.search(line):
-                # Find all numbers on this line
-                nums = CURRENCY_PATTERN.findall(line)
-                for n in nums:
-                    try:
-                        val = float(n.replace(',', ''))
-                        if 0 < val < 10_000_000:
-                            best_amount = val   # keep the last / largest on a totals line
-                    except ValueError:
-                        pass
+        # ── Strategy 1: High-priority keyword + same line OR next line ──
+        for i, line in enumerate(lines_list):
+            if HIGH_PRIORITY.search(line):
+                # Look at current line AND next line (multi-column OCR splits)
+                search_text = line + ' ' + (lines_list[i + 1] if i + 1 < len(lines_list) else '')
+                matches = MONEY_RE.findall(search_text)
+                for m in matches:
+                    val = float(m.replace(',', ''))
+                    if val > 0:
+                        amount = val  # keep overwriting; last high-priority match wins
 
-        if best_amount > 0:
-            amount = best_amount
-        else:
-            # Fallback 1: INR symbol anywhere in text
-            inr_match = re.search(
-                r'(?:INR|Rs\.?|₹)\s*([\d,]+\.?\d{0,2})',
+        # ── Strategy 2: Low-priority keyword + same/next line ───────────
+        if amount == 0:
+            for i, line in enumerate(lines_list):
+                if LOW_PRIORITY.search(line):
+                    search_text = line + ' ' + (lines_list[i + 1] if i + 1 < len(lines_list) else '')
+                    matches = MONEY_RE.findall(search_text)
+                    for m in matches:
+                        val = float(m.replace(',', ''))
+                        if val > 0:
+                            amount = val
+
+        # ── Strategy 3: Last ₹/Rs/INR amount in the entire text ─────────
+        if amount == 0:
+            inr_amounts = re.findall(
+                r'(?:₹|Rs\.?|INR)\s*(\d{1,7}(?:,\d{3})*\.\d{2})',
                 text, re.IGNORECASE
             )
-            if inr_match:
-                amount = float(inr_match.group(1).replace(',', ''))
-            else:
-                # Fallback 2: largest reasonable decimal number
-                amounts = re.findall(r'\b(\d{1,6}(?:,\d{3})*(?:\.\d{1,2})?)\b', text)
-                parsed = []
-                for a in amounts:
-                    try:
-                        v = float(a.replace(',', ''))
-                        if 0 < v < 1_000_000:
-                            parsed.append(v)
-                    except ValueError:
-                        pass
-                amount = max(parsed) if parsed else 0.0
+            if inr_amounts:
+                # Take the LAST one — bottom of receipt = final total
+                amount = float(inr_amounts[-1].replace(',', ''))
+
+        # ── Strategy 4: Fallback — largest decimal (NOT integer) ─────────
+        if amount == 0:
+            decimal_amounts = MONEY_RE.findall(text)
+            parsed = []
+            for a in decimal_amounts:
+                try:
+                    v = float(a.replace(',', ''))
+                    if 0 < v < 1_000_000:
+                        parsed.append(v)
+                except ValueError:
+                    pass
+            amount = max(parsed) if parsed else 0.0
 
         # ── Date Extraction ──────────────────────────────────────────────
         date_match = re.search(
