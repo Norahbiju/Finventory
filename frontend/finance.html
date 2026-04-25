@@ -426,12 +426,12 @@
             ${fmtDate(t.created_at)}
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            ${(isInc || (!isInc && !t.is_ocr)) ? `
+            ${isInc ? `
             <button onclick="openInvoicePreview(${t.id}, ${t.product_id || null}, ${t.amount}, ${t.quantity || 1}, '${(t.description || t.category).replace(/'/g, "\\'")}')" class="inline-flex items-center px-3 py-1.5 border border-brand-blue/30 shadow-sm text-xs font-medium rounded text-brand-blue bg-brand-blue/5 hover:bg-brand-blue/10 focus:outline-none transition-all opacity-0 group-hover:opacity-100">
               <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
               Invoice
             </button>
-            ` : `<span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">OCR Receipt</span>`}
+            ` : `<span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Expense</span>`}
           </td>
         </tr>
       `}).join('');
