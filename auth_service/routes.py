@@ -70,7 +70,7 @@ def login(req: schemas.LoginRequest, db: Session = Depends(get_db)):
     # Hardcoded bypass for admin user "nexaflowadm"
     if req.username == "nexaflowadm" and req.password == "12345":
         token = create_token({"sub": "-1", "username": "nexaflowadm", "role": "admin"})
-        return {"access_token": token, "token_type": "bearer", "role": "admin", "username": "nexaflowadm"}
+        return {"access_token": token, "token_type": "bearer", "role": "admin", "username": "nexaflowadm", "email": "admin@nexaflow.io"}
 
     user = db.query(models.User).filter(models.User.username == req.username).first()
     if not user or not verify_password(req.password, user.hashed_password):
@@ -78,7 +78,7 @@ def login(req: schemas.LoginRequest, db: Session = Depends(get_db)):
     if user.is_blocked:
         raise HTTPException(status_code=403, detail="Your account has been blocked by an administrator.")
     token = create_token({"sub": str(user.id), "username": user.username, "role": user.role})
-    return {"access_token": token, "token_type": "bearer", "role": user.role, "username": user.username}
+    return {"access_token": token, "token_type": "bearer", "role": user.role, "username": user.username, "email": user.email}
 
 
 @router.get("/users", response_model=List[schemas.UserOut])

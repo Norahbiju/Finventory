@@ -28,10 +28,14 @@
       </div>
     </div>
     
-    <div class="flex justify-end mb-6">
-      <button onclick="openModal('txModal')" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg shadow-soft shadow-primary-500/30 hover:bg-primary-700 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 active:scale-[0.98]">
+    <div class="flex justify-end gap-3 mb-6">
+      <button onclick="openModal('ocrModal')" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Scan Receipt (Expense)
+      </button>
+      <button onclick="openModal('txModal')" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg shadow-soft shadow-primary-500/30 hover:bg-primary-700 transition-all focus:outline-none">
         <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Record Transaction
+        New Sale
       </button>
     </div>
 
@@ -124,90 +128,139 @@
   </main>
 </div>
 
-<!-- Modal: Record Transaction -->
+<!-- Modal: New Sale -->
 <div id="txModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-0 modal-overlay backdrop-blur-sm bg-slate-900/40">
   <div class="bg-white rounded-2xl shadow-card w-full max-w-lg overflow-hidden modal-content">
-    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-      <h3 class="text-lg font-display font-semibold text-slate-800">Record Transaction</h3>
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-primary-50 to-violet-50">
+      <div>
+        <h3 class="text-lg font-display font-semibold text-slate-800">New Sale</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Record an income / sales transaction</p>
+      </div>
       <button onclick="closeModal('txModal')" class="text-slate-400 hover:text-slate-500 transition-colors focus:outline-none p-1 rounded-md hover:bg-slate-100">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    
-    <div class="p-6 space-y-5 relative">
-      <!-- OCR Overlay / Loader -->
+
+    <div class="p-6 space-y-4">
+      <!-- Customer Info -->
+      <div class="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-100">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bill To (Customer)</p>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="txCustName">Customer / Company Name <span class="text-red-500">*</span></label>
+          <input type="text" id="txCustName" placeholder="e.g. Shiv Engineering" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="txCustEmail">Customer Email <span class="text-red-500">*</span></label>
+          <input type="email" id="txCustEmail" placeholder="e.g. customer@company.com" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
+        </div>
+      </div>
+
+      <!-- Product & Pricing -->
+      <div class="space-y-3">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Product Details</p>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="txProduct">Product <span class="text-red-500">*</span></label>
+          <select id="txProduct" onchange="onProductChange()" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm">
+            <option value="">— Select product —</option>
+          </select>
+        </div>
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="txUnitPriceDisplay">Unit Price (₹)</label>
+            <input type="number" id="txUnitPriceDisplay" placeholder="0.00" min="0" step="0.01"
+              oninput="recalcTotal()"
+              class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm font-semibold" />
+          </div>
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="txQty">Quantity</label>
+            <input type="number" id="txQty" placeholder="1" min="1" value="1"
+              oninput="recalcTotal()"
+              class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
+          </div>
+        </div>
+        <!-- Auto Total -->
+        <div class="bg-primary-50 rounded-lg px-4 py-3 flex items-center justify-between border border-primary-100">
+          <span class="text-sm font-medium text-slate-600">Total Amount</span>
+          <span class="text-lg font-bold text-primary-700" id="txTotalDisplay">₹0.00</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1" for="txDesc">Description <span class="text-slate-400 font-normal">(optional)</span></label>
+        <input type="text" id="txDesc" placeholder="Optional note" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
+      </div>
+
+      <div id="txError" class="text-sm text-red-500 font-medium hidden"></div>
+      <!-- Hidden fields -->
+      <input type="hidden" id="txIsOcr" value="false" />
+      <input type="hidden" id="txUnitPrice" value="0" />
+      <input type="hidden" id="txAmount" value="0" />
+    </div>
+
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-2xl">
+      <button type="button" onclick="closeModal('txModal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none">Cancel</button>
+      <button type="button" id="saveBtn" onclick="saveTransaction()" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors focus:outline-none shadow-sm flex items-center">
+        Save Sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Scan Receipt (Expense) -->
+<div id="ocrModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-0 modal-overlay backdrop-blur-sm bg-slate-900/40">
+  <div class="bg-white rounded-2xl shadow-card w-full max-w-md overflow-hidden modal-content">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50">
+      <div>
+        <h3 class="text-lg font-display font-semibold text-slate-800">Scan Expense Receipt</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Upload a receipt image — we'll extract the amount</p>
+      </div>
+      <button onclick="closeModal('ocrModal')" class="text-slate-400 hover:text-slate-500 transition-colors focus:outline-none p-1 rounded-md hover:bg-slate-100">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="p-6 space-y-4 relative">
+      <!-- OCR Loader -->
       <div id="ocrLoader" class="hidden absolute inset-0 z-10 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-b-2xl">
         <svg class="w-8 h-8 text-brand-orange animate-spin mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
         <p class="text-sm font-medium text-slate-700">Scanning Receipt...</p>
       </div>
 
-      <div class="flex justify-between items-center mb-2">
-        <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Manual Entry</p>
+      <!-- Upload area -->
+      <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-primary-300 transition-colors">
+        <svg class="w-10 h-10 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <p class="text-sm text-slate-500 mb-3">Take a photo or upload your receipt</p>
+        <input type="file" id="ocrInput" accept="image/*" class="hidden" onchange="handleOcrUpload(event)">
+        <button type="button" onclick="document.getElementById('ocrInput').click()" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
+          Choose Image
+        </button>
+      </div>
+
+      <!-- Pre-filled result (shown after scan) -->
+      <div id="ocrResult" class="hidden space-y-3">
+        <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-sm text-green-700 font-medium">Receipt scanned successfully!</span>
+        </div>
         <div>
-          <input type="file" id="ocrInput" accept="image/*" class="hidden" onchange="handleOcrUpload(event)">
-          <button type="button" onclick="document.getElementById('ocrInput').click()" class="text-xs font-medium text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 px-3 py-1.5 rounded-lg flex items-center transition-colors">
-            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            Auto-fill with OCR
-          </button>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Extracted Amount (₹) <span class="text-xs text-slate-400">(edit if incorrect)</span></label>
+          <input type="number" id="ocrAmount" placeholder="0.00" step="0.01" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Vendor / Description</label>
+          <input type="text" id="ocrDesc" placeholder="Vendor name" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
         </div>
       </div>
 
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-slate-700 mb-1" for="txType">Type</label>
-          <select id="txType" onchange="onTypeChange()" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm">
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-          </select>
-        </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-slate-700 mb-1" for="txCategory">Category</label>
-          <select id="txCategory" onchange="onTypeChange()" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm">
-            <option value="sale">Sale</option>
-            <option value="purchase">Purchase</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1" for="txAmount">
-          Total Amount (₹) <span class="text-slate-400 font-normal text-xs">— auto-calculated: unit price × qty</span>
-        </label>
-        <input type="number" id="txAmount" placeholder="0.00" min="0" step="0.01" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm font-semibold" />
-      </div>
-      
-      <div class="flex gap-4">
-        <div class="flex-[2]" id="productGroup">
-          <label class="block text-sm font-medium text-slate-700 mb-1" for="txProduct">Product (for sales)</label>
-          <select id="txProduct" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm">
-            <option value="">— Select product —</option>
-          </select>
-        </div>
-        <div class="flex-1" id="qtyGroup">
-          <label class="block text-sm font-medium text-slate-700 mb-1" for="txQty">Quantity</label>
-          <input type="number" id="txQty" placeholder="1" min="1"
-            oninput="(function(){ const u=parseFloat(document.getElementById('txUnitPrice').value)||0; const q=parseInt(this.value)||1; if(u>0) document.getElementById('txAmount').value=(u*q).toFixed(2); }).call(this)"
-            class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
-        </div>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1" for="txDesc">Description <span class="text-slate-400 font-normal">(optional)</span></label>
-        <input type="text" id="txDesc" placeholder="Optional note" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm" />
-      </div>
-      
-      <div id="txError" class="text-sm text-red-500 font-medium hidden"></div>
-      <input type="hidden" id="txIsOcr" value="false" />
-      <input type="hidden" id="txUnitPrice" value="0" />
+      <div id="ocrError" class="text-sm text-red-500 font-medium hidden"></div>
     </div>
-    
-      <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-2xl">
-        <button type="button" onclick="closeModal('txModal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none">Cancel</button>
-        <button type="button" id="saveBtn" onclick="saveTransaction()" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors focus:outline-none shadow-sm flex items-center">
-          Save Transaction
-        </button>
-      </div>
+
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-2xl">
+      <button type="button" onclick="closeModal('ocrModal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none">Cancel</button>
+      <button type="button" id="saveOcrBtn" onclick="saveOcrExpense()" class="hidden px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors focus:outline-none shadow-sm">
+        Save Expense
+      </button>
+    </div>
   </div>
 </div>
 
@@ -275,24 +328,18 @@
       }
       
       const data = await response.json();
-      
-      // Auto-fill fields
-      document.getElementById('txType').value = 'expense';
-      document.getElementById('txCategory').value = 'purchase';
-      onTypeChange();
-      
+
+      // Populate OCR modal result fields
       if (data.amount > 0) {
-        document.getElementById('txAmount').value = data.amount;
+        document.getElementById('ocrAmount').value = data.amount;
       } else {
         alert("OCR parsed successfully, but amount was 0. Raw text:\n" + (data.raw_text ? data.raw_text.substring(0, 500) : "No text found"));
       }
-      
-      // Mark this transaction as OCR-sourced
-      document.getElementById('txIsOcr').value = 'true';
-      
-      document.getElementById('txDesc').value = `Receipt from ${data.vendor || 'Unknown'} on ${data.date || 'unknown date'}`;
-      
-      showToast('Receipt scanned successfully!', 'success');
+      document.getElementById('ocrDesc').value = `Receipt from ${data.vendor || 'Unknown'} on ${data.date || 'unknown date'}`;
+      document.getElementById('ocrResult').classList.remove('hidden');
+      document.getElementById('saveOcrBtn').classList.remove('hidden');
+
+      showToast('Receipt scanned! Please review and save.', 'success');
     } catch (err) {
       showToast('Failed to process receipt via OCR', 'error');
       console.error(err);
@@ -318,13 +365,8 @@
     if (tab === 'inv') loadInvoices();
   }
 
-  function onTypeChange() {
-    const isSale = document.getElementById('txCategory').value === 'sale';
-    document.getElementById('productGroup').style.display = isSale ? '' : 'none';
-    document.getElementById('qtyGroup').style.display     = isSale ? '' : 'none';
-  }
-  document.getElementById('txCategory').addEventListener('change', onTypeChange);
-  onTypeChange();
+  function onTypeChange() {}
+
 
   async function loadProductOptions() {
     try {
@@ -332,17 +374,9 @@
       if (!products) return;
       allProducts = products;
       const sel = document.getElementById('txProduct');
-      sel.innerHTML = '<option value="">— Select product —</option>' +
+      sel.innerHTML = '<option value="">\u2014 Select product \u2014</option>' +
         products.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (Stock: ${p.stock})</option>`).join('');
-      sel.addEventListener('change', () => {
-        const opt = sel.options[sel.selectedIndex];
-        if (opt.dataset.price) {
-          const unitPrice = parseFloat(opt.dataset.price);
-          document.getElementById('txUnitPrice').value = unitPrice;
-          const qty = parseInt(document.getElementById('txQty').value) || 1;
-          document.getElementById('txAmount').value = (unitPrice * qty).toFixed(2);
-        }
-      });
+      // onProductChange() handles price auto-fill via onchange attribute
     } catch (e) { console.error(e); }
   }
 
@@ -407,48 +441,75 @@
     }
   }
 
+  // ── Recalculate total display ──────────────────────────────────────
+  function recalcTotal() {
+    const unit = parseFloat(document.getElementById('txUnitPriceDisplay').value) || 0;
+    const qty  = parseInt(document.getElementById('txQty').value) || 1;
+    const total = unit * qty;
+    document.getElementById('txTotalDisplay').textContent = '\u20b9' + total.toFixed(2);
+    document.getElementById('txAmount').value = total.toFixed(2);
+    document.getElementById('txUnitPrice').value = unit;
+  }
+
+  // ── When product selected, fill unit price ──────────────────────────
+  function onProductChange() {
+    const sel = document.getElementById('txProduct');
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.price) {
+      document.getElementById('txUnitPriceDisplay').value = parseFloat(opt.dataset.price).toFixed(2);
+      recalcTotal();
+    }
+  }
+
+  // ── Save Sale (manual income) ───────────────────────────────────────
   async function saveTransaction() {
     const errEl = document.getElementById('txError');
-    const btn = document.getElementById('saveBtn');
+    const btn   = document.getElementById('saveBtn');
     errEl.classList.add('hidden');
-    
-    const type     = document.getElementById('txType').value;
-    const category = document.getElementById('txCategory').value;
-    const amount   = parseFloat(document.getElementById('txAmount').value);
-    const desc     = document.getElementById('txDesc').value.trim();
-    const productId= parseInt(document.getElementById('txProduct').value) || null;
-    const qty      = parseInt(document.getElementById('txQty').value) || null;
-    const isOcr    = document.getElementById('txIsOcr').value === 'true';
-    // Reset OCR flag so the next manual entry is clean
-    document.getElementById('txIsOcr').value = 'false';
 
-    if (isNaN(amount) || amount <= 0) { 
-      errEl.textContent = 'Please enter a valid amount.'; 
-      errEl.classList.remove('hidden'); return; 
-    }
-    if (category === 'sale' && !productId) { 
-      errEl.textContent = 'Please select a product for a sale.'; 
-      errEl.classList.remove('hidden'); return; 
-    }
+    const custName  = document.getElementById('txCustName').value.trim();
+    const custEmail = document.getElementById('txCustEmail').value.trim();
+    const productId = parseInt(document.getElementById('txProduct').value) || null;
+    const unitPrice = parseFloat(document.getElementById('txUnitPriceDisplay').value) || 0;
+    const qty       = parseInt(document.getElementById('txQty').value) || 1;
+    const amount    = parseFloat(document.getElementById('txAmount').value) || (unitPrice * qty);
+    const desc      = document.getElementById('txDesc').value.trim();
+
+    if (!custName)  { errEl.textContent = 'Please enter the customer name.'; errEl.classList.remove('hidden'); return; }
+    if (!custEmail) { errEl.textContent = 'Please enter the customer email.'; errEl.classList.remove('hidden'); return; }
+    if (!productId) { errEl.textContent = 'Please select a product.'; errEl.classList.remove('hidden'); return; }
+    if (amount <= 0) { errEl.textContent = 'Total amount must be greater than 0.'; errEl.classList.remove('hidden'); return; }
 
     const originalText = btn.innerHTML;
     btn.innerHTML = 'Saving...';
     btn.disabled = true;
 
-    const body = JSON.stringify({ type, category, amount, description: desc || null, product_id: productId, quantity: qty, is_ocr: isOcr });
+    const descFull = desc || `Sale to ${custName}`;
+    const body = JSON.stringify({ type: 'income', category: 'sale', amount, description: descFull,
+      product_id: productId, quantity: qty, is_ocr: false });
     try {
-      await apiFetch(`${FINANCE_URL}/transactions`, { method: 'POST', headers: authHeaders(), body });
-      
-      document.getElementById('txAmount').value = '';
-      document.getElementById('txDesc').value   = '';
+      const saved = await apiFetch(`${FINANCE_URL}/transactions`, { method: 'POST', headers: authHeaders(), body });
+
+      // Store customer info for invoice
+      window._lastCustName  = custName;
+      window._lastCustEmail = custEmail;
+      window._lastTxId      = saved.id;
+
+      // Clear form
+      document.getElementById('txCustName').value = '';
+      document.getElementById('txCustEmail').value = '';
       document.getElementById('txProduct').value = '';
-      document.getElementById('txQty').value    = '';
+      document.getElementById('txUnitPriceDisplay').value = '';
+      document.getElementById('txQty').value = '1';
+      document.getElementById('txTotalDisplay').textContent = '\u20b90.00';
+      document.getElementById('txAmount').value = '0';
       document.getElementById('txUnitPrice').value = '0';
-      
+      document.getElementById('txDesc').value = '';
+
       closeModal('txModal');
-      showToast('Transaction recorded successfully.', 'success');
+      showToast('Sale recorded successfully.', 'success');
       loadTransactions();
-      loadProductOptions(); 
+      loadProductOptions();
       if (typeof loadNotifications === 'function') loadNotifications();
     } catch (err) {
       errEl.textContent = err.message;
@@ -459,6 +520,45 @@
     }
   }
 
+  // ── Save OCR Expense ────────────────────────────────────────────────
+  async function saveOcrExpense() {
+    const errEl  = document.getElementById('ocrError');
+    const btn    = document.getElementById('saveOcrBtn');
+    const amount = parseFloat(document.getElementById('ocrAmount').value);
+    const desc   = document.getElementById('ocrDesc').value.trim();
+    errEl.classList.add('hidden');
+
+    if (isNaN(amount) || amount <= 0) {
+      errEl.textContent = 'Please enter a valid amount.';
+      errEl.classList.remove('hidden'); return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Saving...';
+    btn.disabled = true;
+
+    const body = JSON.stringify({ type: 'expense', category: 'purchase', amount,
+      description: desc || 'OCR Receipt', is_ocr: true });
+    try {
+      await apiFetch(`${FINANCE_URL}/transactions`, { method: 'POST', headers: authHeaders(), body });
+      document.getElementById('ocrAmount').value = '';
+      document.getElementById('ocrDesc').value   = '';
+      document.getElementById('ocrResult').classList.add('hidden');
+      document.getElementById('saveOcrBtn').classList.add('hidden');
+      closeModal('ocrModal');
+      showToast('Expense saved from receipt.', 'success');
+      loadTransactions();
+      if (typeof loadNotifications === 'function') loadNotifications();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+
+  // ── Open Invoice Preview (now with customer info) ───────────────────
   async function openInvoicePreview(txId, productId, amount, qty, desc) {
     let productName = desc || 'General Service';
     if (productId && allProducts && allProducts.length > 0) {
@@ -466,9 +566,14 @@
       if (prod) productName = prod.name;
     }
     const unitPrice = amount / (qty || 1);
-    
+
+    // Get customer info stored when the sale was saved
+    const custName  = window._lastCustName  || 'Customer';
+    const custEmail = window._lastCustEmail || '';
+    const sellerName  = localStorage.getItem('nexaflow_username') || 'Your Company';
+    const sellerEmail = localStorage.getItem('nexaflow_email')    || '';
+
     try {
-      // First save the invoice record to the DB so it appears in the Invoices tab
       const generatedInvoice = await apiFetch(`${INVOICE_URL}/invoices`, {
         method: 'POST',
         headers: authHeaders(),
@@ -481,14 +586,17 @@
       });
       if (typeof loadNotifications === 'function') loadNotifications();
 
-      // Then open the beautiful HTML preview page
       const params = new URLSearchParams({
         id: generatedInvoice.id,
         name: productName,
         qty: qty || 1,
         unit: unitPrice.toFixed(2),
         total: amount.toFixed(2),
-        date: new Date().toLocaleDateString('en-IN')
+        date: new Date().toLocaleDateString('en-IN'),
+        custName,
+        custEmail,
+        sellerName,
+        sellerEmail
       });
       window.open(`invoice.html?${params.toString()}`, '_blank');
       showToast('Invoice created! Opening preview...', 'success');

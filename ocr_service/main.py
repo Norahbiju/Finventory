@@ -36,27 +36,53 @@ async def process_receipt(file: UploadFile = File(...)):
         # ── Amount Extraction ────────────────────────────────────────────
         amount = 0.0
 
-        # 1. Try to find INR amount: "INR 575.00" or "Rs 575.00" or "₹575.00"
-        inr_match = re.search(
-            r'(?:INR|Rs\.?|₹)\s*([\d,]+\.?\d{0,2})',
-            text, re.IGNORECASE
+        # Strategy: scan line-by-line and take the LAST match for total keywords.
+        # Receipts show running subtotals before the final grand total at the bottom.
+        TOTAL_KEYWORDS = re.compile(
+            r'\b(grand\s+total|total\s+amount|amount\s+payable|net\s+payable|'
+            r'net\s+total|balance\s+due|amount\s+due|total)\b',
+            re.IGNORECASE
         )
-        if inr_match:
-            amount = float(inr_match.group(1).replace(',', ''))
+        CURRENCY_PATTERN = re.compile(
+            r'(?:rs\.?|inr|₹|\$)?\s*([\d,]+\.?\d{0,2})',
+            re.IGNORECASE
+        )
+
+        best_amount = 0.0
+        for line in text.splitlines():
+            if TOTAL_KEYWORDS.search(line):
+                # Find all numbers on this line
+                nums = CURRENCY_PATTERN.findall(line)
+                for n in nums:
+                    try:
+                        val = float(n.replace(',', ''))
+                        if 0 < val < 10_000_000:
+                            best_amount = val   # keep the last / largest on a totals line
+                    except ValueError:
+                        pass
+
+        if best_amount > 0:
+            amount = best_amount
         else:
-            # 2. Fallback: find any decimal number
-            amounts = re.findall(r'\b(\d{1,6}(?:,\d{3})*(?:\.\d{1,2})?)\b', text)
-            if amounts:
+            # Fallback 1: INR symbol anywhere in text
+            inr_match = re.search(
+                r'(?:INR|Rs\.?|₹)\s*([\d,]+\.?\d{0,2})',
+                text, re.IGNORECASE
+            )
+            if inr_match:
+                amount = float(inr_match.group(1).replace(',', ''))
+            else:
+                # Fallback 2: largest reasonable decimal number
+                amounts = re.findall(r'\b(\d{1,6}(?:,\d{3})*(?:\.\d{1,2})?)\b', text)
                 parsed = []
                 for a in amounts:
                     try:
-                        parsed.append(float(a.replace(',', '')))
+                        v = float(a.replace(',', ''))
+                        if 0 < v < 1_000_000:
+                            parsed.append(v)
                     except ValueError:
                         pass
-                if parsed:
-                    # Filter out obvious reference/ID numbers (very large)
-                    reasonable = [a for a in parsed if a < 1_000_000]
-                    amount = max(reasonable) if reasonable else 0.0
+                amount = max(parsed) if parsed else 0.0
 
         # ── Date Extraction ──────────────────────────────────────────────
         date_match = re.search(

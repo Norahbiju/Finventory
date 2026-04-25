@@ -262,6 +262,7 @@
       localStorage.setItem('role', data.role);
       localStorage.setItem('username', data.username);
       localStorage.setItem('nexaflow_username', data.username);
+      localStorage.setItem('nexaflow_email', data.email || '');
       
       showToast('Login successful!', 'success');
       setTimeout(() => {
