@@ -77,8 +77,14 @@ Answer in simple, clear English and be extremely concise."""
         )
         return QueryResponse(response=response.text.strip())
     except Exception as e:
-        print(f"Gemini API Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error connecting to Gemini API. Details: {str(e)}")
+        error_msg = str(e)
+        print(f"Gemini API Error: {error_msg}")
+        
+        if "429" in error_msg or "ResourceExhausted" in error_msg or "quota" in error_msg.lower():
+            friendly_msg = "I'm currently receiving too many requests and my free tier quota is full! Please wait about 30 seconds and ask me again."
+            return QueryResponse(response=friendly_msg)
+            
+        raise HTTPException(status_code=500, detail=f"AI connection error: {error_msg[:100]}...")
 
 @app.get("/")
 def root():
