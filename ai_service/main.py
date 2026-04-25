@@ -22,7 +22,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_key_here":
     genai.configure(api_key=GEMINI_API_KEY)
     # Using the standard gemini-pro model for text instructions
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-pro')
 else:
     model = None
 
