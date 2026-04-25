@@ -59,23 +59,29 @@ async def process_receipt(file: UploadFile = File(...)):
                 return None
 
         # ── Strategy 1: High-priority keyword → same line + next line ────
+        high_vals = []
         for i, line in enumerate(lines_list):
             if HIGH_PRIORITY.search(line):
                 search_text = line + ' ' + (lines_list[i + 1] if i + 1 < len(lines_list) else '')
                 for m in ANY_NUM.findall(search_text):
                     v = parse_num(m)
                     if v and 1 <= v < 10_000_000:
-                        amount = v  # keep overwriting — last high-priority match wins
+                        high_vals.append(v)
+        if high_vals:
+            amount = max(high_vals)
 
         # ── Strategy 2: Low-priority keyword → same line + next line ─────
         if amount == 0:
+            low_vals = []
             for i, line in enumerate(lines_list):
                 if LOW_PRIORITY.search(line):
                     search_text = line + ' ' + (lines_list[i + 1] if i + 1 < len(lines_list) else '')
                     for m in ANY_NUM.findall(search_text):
                         v = parse_num(m)
                         if v and 1 <= v < 10_000_000:
-                            amount = v
+                            low_vals.append(v)
+            if low_vals:
+                amount = max(low_vals)
 
         # ── Strategy 3: Last ₹ / Rs / INR amount anywhere in text ────────
         if amount == 0:
